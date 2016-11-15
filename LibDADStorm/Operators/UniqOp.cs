@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace DADStorm
 {
+	[Serializable]
 	public class UniqOp : Operator
 	{
 

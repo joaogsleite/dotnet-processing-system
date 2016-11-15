@@ -23,36 +23,34 @@ namespace DADStorm {
 
 		void createOperators(List<Operator> ops) {
 			foreach (Operator op in ops){
-				Console.WriteLine(op.id);
-				foreach (string url in op.replicas_url){
-					createReplica(op, url);
-					Console.WriteLine(url);
+				Console.Write("\n" + op.id + ": ");
+				foreach (string replica_url in op.replicas_url){
+					Console.Write(replica_url + ", ");
+					createReplica(op, replica_url);
 				}	
 			}
 		}
 
 		void createReplica(Operator op, string replica_url){
-			Console.WriteLine(replica_url);
 			string[] parts = replica_url.Split(':');
 			string machine = parts[1];
 
 			string pcs_url = "tcp:" + machine + ":10000/pcs";
 
-			//try{
+			try{
 				if (!pcs.ContainsKey(pcs_url)){
 					TcpChannel channel = new TcpChannel();
 					ChannelServices.RegisterChannel(channel, false);
 					pcs.Add(pcs_url, (IPCS)Activator.GetObject(typeof(IPCS), pcs_url));
 				}
 				pcs[pcs_url].createReplica(op,replica_url);
-				//pcs[pcs_url].hello("Ze");
-			/*}
+			}
 			catch (RemotingException e){
 				Console.WriteLine(e.ToString());
 			}
 			catch (SocketException){
 				System.Console.WriteLine("Could not locate server");
-			}*/
+			}
 		}
 
 		[STAThread]
