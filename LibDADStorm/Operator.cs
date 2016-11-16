@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace DADStorm
-{
+namespace DADStorm{
 	[Serializable]
 	public class Operator {
 
@@ -69,10 +68,6 @@ namespace DADStorm
 			foreach (string url in replicas_url) res += url + ",";
 			res += " " + options;
 			return res;
-		}
-
-		class typeFilterLevelAttribute : Attribute
-		{
 		}
 	}
 }

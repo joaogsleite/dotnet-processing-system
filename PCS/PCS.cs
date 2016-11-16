@@ -33,20 +33,23 @@ namespace DADStorm {
 			// Dont close console
 			Console.ReadLine();
 		}
-		private class RegisterReplica{
+		private class RegisterReplica {
 			public RegisterReplica(Operator op, string url){
 				int port = Int32.Parse(url.Split(':')[2].Split('/')[0]);
 				string uri = url.Split('/')[url.Split('/').Length - 1];
-				IDictionary RemoteChannelProperties = new Hashtable();
-				RemoteChannelProperties["port"] = port;
-				RemoteChannelProperties["name"] = "tcp" + port;
 
-				TcpServerChannel channel = new TcpServerChannel(RemoteChannelProperties, null);
+				BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+				provider.TypeFilterLevel = TypeFilterLevel.Full;
+				IDictionary props = new Hashtable();
+				props["port"] = port;
+				props["name"] = "tcp" + port;
+
+				TcpServerChannel channel = new TcpServerChannel(props,provider);
 				ChannelServices.RegisterChannel(channel, false);
-				//open_connections.Add(channel);
 
 				Replica replica = new Replica(op, url);
 				RemotingServices.Marshal(replica, uri, typeof(Replica));
+				replica.Start();
 
 				Console.WriteLine("Replica " + url + " created with operator " + op.id);
 			}

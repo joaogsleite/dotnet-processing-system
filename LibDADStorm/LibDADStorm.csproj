@@ -39,6 +39,7 @@
     <Compile Include="Operators\FilterOp.cs" />
     <Compile Include="Operators\UniqOp.cs" />
     <Compile Include="Operator.cs" />
+    <Compile Include="IReplica.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Operators\" />
