@@ -49,9 +49,12 @@ namespace DADStorm {
 
 				Replica replica = new Replica(op, url);
 				RemotingServices.Marshal(replica, uri, typeof(Replica));
-				replica.Start();
 
 				Console.WriteLine("Replica " + url + " created with operator " + op.id);
+
+				// TODO !!! should be PuppetMaster to start replicas
+				System.Threading.Thread.Sleep(1000);
+				replica.Start();
 			}
 		}
 	}

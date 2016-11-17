@@ -69,5 +69,9 @@ namespace DADStorm{
 			res += " " + options;
 			return res;
 		}
+
+		public virtual Tuple execute(Tuple tuple){
+			return tuple;
+		}
 	}
 }
