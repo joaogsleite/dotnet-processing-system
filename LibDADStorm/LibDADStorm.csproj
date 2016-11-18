@@ -42,6 +42,7 @@
     <Compile Include="Interfaces\IPCS.cs" />
     <Compile Include="Interfaces\IReplica.cs" />
     <Compile Include="ExampleCustomClass.cs" />
+    <Compile Include="Interfaces\IPM.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Operators\" />

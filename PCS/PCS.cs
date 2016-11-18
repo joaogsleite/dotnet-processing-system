@@ -11,9 +11,21 @@ namespace DADStorm {
 	
 	public class PCS : MarshalByRefObject, IPCS{
 
-		//List<TcpServerChannel> open_connections = new List<TcpServerChannel>();
+		private static string pm_url = "tcp://localhost:10001/pm";
+		public static IPM pm;
 
-		public PCS() : base() { }
+		public PCS() : base() {
+			
+			new Thread(() => {
+				BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+				provider.TypeFilterLevel = TypeFilterLevel.Full;
+				IDictionary props = new Hashtable();
+				props["name"] = "tcp_pm";
+				TcpServerChannel channel = new TcpServerChannel(props,provider);
+				ChannelServices.RegisterChannel(channel, false);
+				pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
+			}).Start();
+		}
 
 		public void createReplica(Operator op, string url){
 			Thread thread = new Thread(() => new RegisterReplica(op,url));
@@ -50,9 +62,6 @@ namespace DADStorm {
 				Replica replica = new Replica(op, url);
 				RemotingServices.Marshal(replica, uri, typeof(Replica));
 
-				// TODO !!! should be PuppetMaster to start replicas
-				//System.Threading.Thread.Sleep(1000);
-				//replica.Start();
 			}
 		}
 	}

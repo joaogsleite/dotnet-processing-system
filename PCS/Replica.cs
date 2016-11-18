@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
@@ -18,7 +19,7 @@ namespace DADStorm{
 		public Replica(Operator op, string url){
 			this.op = op;
 			this.url = url;
-			Console.WriteLine("Replica " + url + " created with operator " + op.id);
+			Console.WriteLine(">> Start replica " + url + " with operator " + op.id);
 			ConnectReplicas();
 			ReadInputFiles();
 		}
@@ -33,8 +34,10 @@ namespace DADStorm{
 			while(processing){
 				if(queue.Count > 0 & Send != null){
 					Tuple tuple = op.execute(queue.Dequeue());
-					if(tuple != null)
+					if(tuple != null){
 						Send(this, (EventArgs)tuple);
+						log("tuple "+url+", <"+tuple+">");
+					}
 				}
 				Thread.Sleep(1000);
 			}
@@ -53,9 +56,7 @@ namespace DADStorm{
 		}
 
 		public string Status(){
-			string log = op.id+" "+url+" => "+(processing?"processing":"");
-			Console.WriteLine(log);
-			return log;
+			return op.id+" "+url+" => "+(processing?"processing":"");
 		}
 
 		public void Interval(int time){
@@ -93,17 +94,21 @@ namespace DADStorm{
 			while(!success){
 				try{
 					repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
+					repl.Send += new Replica.SendHandler(this.Receive);
+					success = true;
 				} catch(Exception){
-					Console.WriteLine("Cant connect to replica "+repl_url);	
+					Console.WriteLine("Retrying connect to "+repl_url);	
 				}
-				success = true;
+				Thread.Sleep(1000);
 			}
-			repl.Send += new Replica.SendHandler(this.Receive);
+
 		}
 		private void Receive(Replica repl, EventArgs e){
-			Tuple tuple = (Tuple)e;
-			queue.Enqueue(tuple);
-			Console.WriteLine(op.id+url+" received new tuple from "+repl.op.id+repl.url+" => "+tuple);
+			queue.Enqueue((Tuple)e);
+		}
+
+		private void log(string text){
+			PCS.pm.log(text);
 		}
 	}
 }
