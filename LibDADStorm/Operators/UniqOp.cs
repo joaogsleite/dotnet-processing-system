@@ -11,7 +11,10 @@ namespace DADStorm
 		private List<Tuple> tuples = new List<Tuple>();
 
 		public UniqOp(string id, List<Operator> input_ops, List<string> input_files, string routing, List<string> replicas_url, string options)
-			: base(id, input_ops, input_files, routing, replicas_url, options) { }
+			: base(id, input_ops, input_files, routing, replicas_url, options) { 
+
+			this.field = Int32.Parse(options);
+		}
 
 		public override Tuple execute(Tuple tuple){
 			foreach(Tuple t in tuples){

@@ -13,7 +13,7 @@ namespace DADStorm{
 		}
 
 		public string Get(int index){
-			return items.GetRange(index,1)[0];
+			return items[index];
 		}
 
 		public Boolean Contains(string item){

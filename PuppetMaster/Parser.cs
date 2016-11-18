@@ -22,7 +22,7 @@ namespace DADStorm
 			string[] lines = content.Split('\n');
 			List<string> res = new List<string>();
 			foreach (string line in lines){
-				Regex r = new Regex("Start|Status|Crash|Freeze|Unfreeze");
+				Regex r = new Regex("Start|Status|Crash|Freeze|Unfreeze|Interval|Wait");
 				if (r.IsMatch(line)) res.Add(line);
 			}
 			return res;
