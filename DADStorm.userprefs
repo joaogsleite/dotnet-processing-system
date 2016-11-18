@@ -1,10 +1,6 @@
 ﻿<Properties StartupConfiguration="MonoDevelop.Projects.MultiStartup">
   <MonoDevelop.Ide.ItemProperties.PuppetMaster PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="PuppetMaster/PuppetMaster.cs">
-    <Files>
-      <File FileName="PuppetMaster/PuppetMaster.cs" Line="115" Column="50" />
-    </Files>
-  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workbench />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
