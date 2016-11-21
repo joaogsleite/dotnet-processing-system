@@ -3,7 +3,7 @@
   <MonoDevelop.Ide.ItemProperties.PuppetMaster PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.Workbench ActiveDocument="PuppetMaster/Windows/Freeze.cs">
     <Files>
-      <File FileName="PuppetMaster/Windows/Freeze.cs" Line="35" Column="2" />
+      <File FileName="PuppetMaster/Windows/Freeze.cs" Line="29" Column="21" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
