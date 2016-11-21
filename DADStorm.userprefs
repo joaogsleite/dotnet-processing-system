@@ -1,13 +1,23 @@
-﻿<Properties StartupConfiguration="MonoDevelop.Projects.MultiStartup">
+﻿<Properties StartupConfiguration="Multi-Startup">
+  <MonoDevelop.Ide.ItemProperties.PCS PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.ItemProperties.PuppetMaster PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench />
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="PuppetMaster/Windows/Freeze.cs">
+    <Files>
+      <File FileName="PuppetMaster/Windows/Freeze.cs" Line="35" Column="2" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug|x86" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
-  <StartupItems>
-    <String>PuppetMaster/PuppetMaster.csproj</String>
-    <String>PCS/PCS.csproj</String>
-  </StartupItems>
+  <MultiItemStartupConfigurations>
+    <MultiItemSolutionRunConfiguration Id="Multi-Startup" Name="Multi-Startup">
+      <Items>
+        <StartupItem ItemId="{8949579A-51E9-4100-873D-8003537B0F89}" ItemName="PuppetMaster" ConfigurationId="Default" />
+        <StartupItem ItemId="{F6ED7107-C080-401C-84BC-BDA91174B580}" ItemName="PCS" ConfigurationId="Default" />
+      </Items>
+    </MultiItemSolutionRunConfiguration>
+  </MultiItemStartupConfigurations>
+  <MonoDevelop.Ide.ItemProperties.Replica PreferredExecutionTarget="MonoDevelop.Default" />
 </Properties>

@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
     <StartAction>Project</StartAction>
-    <ExternalConsole>true</ExternalConsole>
+    <ExternalConsole>false</ExternalConsole>
   </PropertyGroup>
 
 </Project>

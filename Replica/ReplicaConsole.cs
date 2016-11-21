@@ -8,8 +8,8 @@ using System.Text;
 using System.Windows.Forms;
 
 namespace DADStorm {
-    public partial class Form1 : Form {
-        public Form1() {
+	public partial class ReplicaConsole : Form {
+        public ReplicaConsole() {
             InitializeComponent();
         }
     }

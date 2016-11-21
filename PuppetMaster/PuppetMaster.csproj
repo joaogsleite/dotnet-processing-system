@@ -47,14 +47,56 @@
     <Reference Include="System.Runtime.Remoting" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Form1.cs">
+    <Compile Include="PuppetMaster.cs" />
+    <Compile Include="Windows\Crash.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="Windows\Crash.Designer.cs">
+      <DependentUpon>Crash.cs</DependentUpon>
     </Compile>
-    <Compile Include="PuppetMaster.cs" />
+    <Compile Include="Windows\Freeze.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\Freeze.Designer.cs">
+      <DependentUpon>Freeze.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Interval.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\Interval.Designer.cs">
+      <DependentUpon>Interval.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\MainWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\MainWindow.Designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Windows\StartOp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\StartOp.Designer.cs">
+      <DependentUpon>StartOp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Windows\Unfreeze.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Windows\Unfreeze.Designer.cs">
+      <DependentUpon>Unfreeze.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Windows\Crash.resx">
+      <DependentUpon>Crash.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Freeze.resx">
+      <DependentUpon>Freeze.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Interval.resx">
+      <DependentUpon>Interval.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\MainWindow.resx">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -64,6 +106,12 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Windows\StartOp.resx">
+      <DependentUpon>StartOp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Windows\Unfreeze.resx">
+      <DependentUpon>Unfreeze.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -74,8 +122,11 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Parser.cs" />
-    <EmbeddedResource Include="dadstorm.config">
+    <EmbeddedResource Include="Datafiles\dadstorm.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Datafiles\example.script">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

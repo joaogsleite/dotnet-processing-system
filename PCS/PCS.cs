@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
@@ -11,30 +14,39 @@ namespace DADStorm {
 	
 	public class PCS : MarshalByRefObject, IPCS{
 
-		private static string pm_url = "tcp://localhost:10001/pm";
-		public static IPM pm;
+		public string pm_url = "tcp://localhost:10001/pm";
 
-		public PCS() : base() {
-			
-			new Thread(() => {
-				BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
-				provider.TypeFilterLevel = TypeFilterLevel.Full;
-				IDictionary props = new Hashtable();
-				props["name"] = "tcp_pm";
-				TcpServerChannel channel = new TcpServerChannel(props,provider);
-				ChannelServices.RegisterChannel(channel, false);
-				pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
-			}).Start();
+		public PCS() : base() {}
+
+		public void createReplica(string op_id, string repl_url){
+
+			string args = repl_url+" "+op_id+" "+pm_url;
+			string exe_path = Replica.exe_path();
+
+			ProcessStartInfo info = new ProcessStartInfo(exe_path, args); 
+			info.CreateNoWindow = false; 
+
+			Process.Start(info);
 		}
 
-		public void createReplica(Operator op, string url){
-			Thread thread = new Thread(() => new RegisterReplica(op,url));
-			thread.Start();
+		public static string GetLocalIPAddress(){
+			var host = Dns.GetHostEntry(Dns.GetHostName());
+			foreach (var ip in host.AddressList)
+			{
+				if (ip.AddressFamily == AddressFamily.InterNetwork)
+				{
+					return ip.ToString();
+				}
+			}
+			return "localhost";
 		}
 
 		public static void Main(string[] args){
 
+			Console.Clear();
+			Console.WriteLine();
 			Console.WriteLine("PCS");
+			Console.WriteLine("listening on tcp://"+PCS.GetLocalIPAddress() + ":10000/pcs");
 
 			TcpChannel channel = new TcpChannel(10000);
 			ChannelServices.RegisterChannel(channel, false);
@@ -44,25 +56,6 @@ namespace DADStorm {
 
 			// Dont close console
 			Console.ReadLine();
-		}
-		private class RegisterReplica {
-			public RegisterReplica(Operator op, string url){
-				int port = Int32.Parse(url.Split(':')[2].Split('/')[0]);
-				string uri = url.Split('/')[url.Split('/').Length - 1];
-
-				BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
-				provider.TypeFilterLevel = TypeFilterLevel.Full;
-				IDictionary props = new Hashtable();
-				props["port"] = port;
-				props["name"] = "tcp" + port;
-
-				TcpServerChannel channel = new TcpServerChannel(props,provider);
-				ChannelServices.RegisterChannel(channel, false);
-
-				Replica replica = new Replica(op, url);
-				RemotingServices.Marshal(replica, uri, typeof(Replica));
-
-			}
 		}
 	}
 }

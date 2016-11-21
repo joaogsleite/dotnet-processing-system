@@ -1,0 +1,6 @@
+﻿namespace DADStorm
+{
+	class BinaryServerFormatterSinkProvider
+	{
+	}
+}

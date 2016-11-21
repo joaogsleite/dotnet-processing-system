@@ -2,6 +2,6 @@
 
 namespace DADStorm {
 	public interface IPCS {
-		void createReplica(Operator op, string url);
+		void createReplica(string op_id, string url);
 	}
 }

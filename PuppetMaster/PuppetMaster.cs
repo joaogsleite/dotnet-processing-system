@@ -1,47 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
-using System.Runtime.Remoting;
+using System.Text;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
-using System.Net.Sockets;
+using System.Collections;
 using System.Threading;
 using System.Runtime.Serialization.Formatters;
-using System.Collections;
+using System.Runtime.Remoting;
+using System.Net.Sockets;
+using System.Runtime.Remoting.Messaging;
 
 namespace DADStorm {
-	class PuppetMaster : MarshalByRefObject, IPM {
-
-		private Dictionary<string, IPCS> pcs = new Dictionary<string, IPCS>();
+    public class PuppetMaster : MarshalByRefObject, IPM {
+    private Dictionary<string, IPCS> pcs = new Dictionary<string, IPCS>();
 		private List<string> replicas_url = new List<string>();
 		private Dictionary<string,IReplica> replicas_by_url = new Dictionary<string, IReplica>();
-		private Dictionary<string,Operator> operators = new Dictionary<string,Operator>();
+		public Dictionary<string,Operator> operators = new Dictionary<string,Operator>();
 		private delegate void RemoteAsyncDelegate();
 		private delegate void IntervalRemoteAsyncDelegate(int interval);
+		private delegate string StatusRemoteAsyncDelegate();
+		private Boolean full_logging = false;
+        public Func<string,string> print_log;
 
-		public PuppetMaster() {
-			// Windows.Forms GUI
-			//Application.EnableVisualStyles();
-			//Application.SetCompatibleTextRenderingDefault(false);
-			//Application.Run(new Form1());
+		public PuppetMaster() {}
 
+		public Operator get_operator_by_id(string op_id){
+			return operators[op_id];
 		}
 
-		private void CreateOperators(List<Operator> ops) {
+		public void CreateOperators(List<Operator> ops) {
 			foreach (Operator op in ops){
 				operators.Add(op.id,op);
-				Console.Write("\n" + op.id + ": ");
 				foreach (string replica_url in op.replicas_url){
-					Console.Write(replica_url + ", ");
 					new Thread(()=>{ CreateReplica(op, replica_url); }).Start();
 					replicas_url.Add(replica_url);
 				}	
 			}
-			Console.Write("\n\n");
 		}
 
-		private void ConnectToReplicas(){
+		public void ConnectToReplicas(){
 			foreach(string repl_url in replicas_url){
 				new Thread(()=>{ connectToReplica(repl_url); }).Start();
 			}
@@ -57,9 +55,8 @@ namespace DADStorm {
 					IReplica repl = (IReplica)Activator.GetObject(typeof(IReplica), repl_url);
 					replicas_by_url.Add(repl_url, repl);
 					connected = true;
-				}catch(Exception e){
-					Console.WriteLine(e);
-					Console.WriteLine("Retring connect to "+repl_url);
+				}catch(Exception){
+					print_log("Retring connect to "+repl_url);
 				}
 				Thread.Sleep(1000);
 			}
@@ -84,96 +81,99 @@ namespace DADStorm {
 					ChannelServices.RegisterChannel(channel, false);
 					pcs.Add(pcs_url, (IPCS)Activator.GetObject(typeof(IPCS), pcs_url));
 				}
-				pcs[pcs_url].createReplica(op,replica_url);
+				pcs[pcs_url].createReplica(op.id,replica_url);
 				Monitor.Exit(pcs);
 			}
 			catch (RemotingException e){
-				Console.WriteLine(e.ToString());
+				print_log(e.ToString());
 			}
 			catch (SocketException){
-				System.Console.WriteLine("Could not locate server");
+				print_log("Could not locate server");
 			}
 		}
 
-		private void LoadConfigCommands(List<string> commands){
-			foreach(string cmd in commands){
-				Console.WriteLine(">> "+cmd);
-				if(cmd.Contains("Start"))
-					StartOp(cmd.Split(' ')[1]);
-				if(cmd.Contains("Interval"))
-					Interval(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-				//if(cmd.Contains("Status"))
-				//	Status();    TODO !!!
-				if(cmd.Contains("Crash"))
-					Crash(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-				if(cmd.Contains("Freeze"))
-					Freeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-				if(cmd.Contains("Unfreeze"))
-					Unfreeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-				if(cmd.Contains("Wait"))
-					Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
-				Thread.Sleep(1000);
-			}
+		public void LoadCommands(List<string> commands){
+			ThreadPool.QueueUserWorkItem(a => {
+				foreach(string cmd in commands){
+					if(cmd.Contains("Start"))
+						StartOp(cmd.Split(' ')[1]);
+					if(cmd.Contains("Interval"))
+						Interval(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
+					if(cmd.Contains("Status"))
+						Status();
+					if(cmd.Contains("Crash"))
+						Crash(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
+					if(cmd.Contains("Freeze"))
+						Freeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
+					if(cmd.Contains("Unfreeze"))
+						Unfreeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
+					if(cmd.Contains("Wait"))
+						Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
+					Thread.Sleep(1000);
+				}
+			});
 		}
-		private void StartOp(string id){
+
+		public void StartOp(string id){
 			foreach(string repl_url in operators[id].replicas_url){
 				RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[repl_url].Start);
 				RemoteDel.BeginInvoke(null, null);
-			}	
+			}
+			print_log(">> Start " + id);
 		}
-		private void Interval(string id, int interval){
+		public void Status(){
+			foreach (string op_id in operators.Keys){
+				foreach (string repl_url in operators[op_id].replicas_url){
+					try{
+						//AsyncCallback cb = new AsyncCallback(StatusCallBack);
+						StatusRemoteAsyncDelegate RemoteDel = new StatusRemoteAsyncDelegate(replicas_by_url[repl_url].Status);
+						//RemoteDel.BeginInvoke(cb, null);
+						RemoteDel.BeginInvoke(null, null);
+					}
+					catch (Exception){
+						log("[" + op_id + " " + repl_url + "] crashed!");
+					}
+
+				}
+			}
+			print_log(">> Status ");
+		}
+		public void StatusCallBack(IAsyncResult ar){
+			StatusRemoteAsyncDelegate d = (StatusRemoteAsyncDelegate)((AsyncResult)ar).AsyncDelegate;
+			log(d.EndInvoke(ar));
+		}
+		public void Interval(string id, int interval){
 			foreach(string repl_url in operators[id].replicas_url){
 				IntervalRemoteAsyncDelegate RemoteDel = new IntervalRemoteAsyncDelegate(replicas_by_url[repl_url].Interval);
 				RemoteDel.BeginInvoke(interval, null, null);
 			}
+			print_log(">> Interval " + id+ " " +interval);
 		}
-		private void Crash(string op_id, int repl_id){
+		public void Crash(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Crash);
 			RemoteDel.BeginInvoke(null, null);
+			print_log(">> Crash " + op_id + " " + repl_id);
 		}
-		private void Freeze(string op_id, int repl_id){
+		public void Freeze(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Freeze);
 			RemoteDel.BeginInvoke(null, null);
+			print_log(">> Freeze " + op_id + " " + repl_id);
 		}
-		private void Unfreeze(string op_id, int repl_id){
+		public void Unfreeze(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Unfreeze);
 			RemoteDel.BeginInvoke(null, null);
+			print_log(">> Unfreeze " + op_id + " " + repl_id);
+		}
+		public void LoggingLevel(string level){
+			if(level=="full")
+				this.full_logging = true;
+			if(level=="light")
+				this.full_logging = false;
 		}
 
 		public void log(string text){
-			Console.WriteLine(text);
+			if(full_logging && print_log!=null)
+				print_log(text);
 		}
-
-		[STAThread]
-        static void Main() {
-
-			Console.WriteLine("PUPPET MASTER");
-
-			PuppetMaster pm = new PuppetMaster();
-
-
-			new Thread(()=>{ 
-				BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
-				provider.TypeFilterLevel = TypeFilterLevel.Full;
-				IDictionary props = new Hashtable();
-				props["port"] = 10001;
-				props["name"] = "tcp10001";
-				TcpServerChannel channel = new TcpServerChannel(props,provider);
-				ChannelServices.RegisterChannel(channel, false);
-				RemotingServices.Marshal(pm, "pm", typeof(IPM));
-			}).Start();
-
-			Parser p = new Parser(@"dadstorm.config");
-
-			Thread.Sleep(3000); // Wait for PCS start!
-			pm.CreateOperators(p.operators());
-
-			pm.ConnectToReplicas();
-
-			Thread.Sleep(6000);
-			pm.LoadConfigCommands(p.commands());
-
-			Console.ReadLine();
-        }
     }
 }

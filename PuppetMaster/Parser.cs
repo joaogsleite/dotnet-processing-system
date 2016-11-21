@@ -18,6 +18,10 @@ namespace DADStorm
 			}
 		}
 
+		public string logging_level(){
+			return content.Split(new string[]{"LoggingLevel "},StringSplitOptions.None)[1].Split(delimiters)[0];
+		}
+
 		public List<string> commands(){
 			string[] lines = content.Split('\n');
 			List<string> res = new List<string>();
