@@ -20,7 +20,7 @@ namespace DADStorm {
         public MainWindow(PuppetMaster pm) {
             InitializeComponent();
             this.pm = pm;
-            pm.print_log = this.log;
+            pm.log_box = this.logs;
 			logs.Text = "Welcome!";
         }
 
@@ -49,10 +49,16 @@ namespace DADStorm {
             this.Close();
         }
 
-		private string log(string new_line){
-			logs.Text = new_line;
+		/*private string log(string new_line){
+			try{
+				logs.Text += "\n" + new_line;
+			}
+			catch (Exception){
+				Console.WriteLine("Error logging...");
+				Console.WriteLine(new_line);
+			}
 			return "";
-        }
+		}*/
 
         private void load_config_Click(object sender, EventArgs e) {
             DialogResult result = open_file.ShowDialog();
@@ -118,5 +124,9 @@ namespace DADStorm {
             Unfreeze unfrze = new Unfreeze(pm);
             unfrze.Show();
         }
+
+		private void log(string text){
+			logs.AppendText("\n" + text);
+		}
     }
 }

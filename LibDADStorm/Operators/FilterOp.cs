@@ -17,24 +17,36 @@ namespace DADStorm
 			this.compare = options.Split(',')[1];
 			this.val = options.Split(',')[2];
 
-			if(this.val.Substring(0,1)=="'" || this.val.Substring(0,1)=="\"")
+			/*if(this.val.Substring(0,1)=="'" || this.val.Substring(0,1)=="\"")
 				this.val = this.val.Substring(1);	
 			if(this.val.Substring(this.val.Length-1)=="'" || this.val.Substring(this.val.Length-1)=="\"")
-				this.val = this.val.Substring(0,this.val.Length-1);
+				this.val = this.val.Substring(0,this.val.Length-1);*/
 		}
 
 		public override Tuple execute(Tuple tuple){
+
 			if(compare=="="){
-				if(tuple.Get(field)==val)
+				if(tuple.Get(field).Equals(val))
 					return tuple;
 			}
 			if(compare==">"){
-				if(Int32.Parse(tuple.Get(field)) > Int32.Parse(val))
-					return tuple;
+				try{
+					if (float.Parse(tuple.Get(field)) > float.Parse(val))
+						return tuple;
+				}catch (Exception){
+					if (string.Compare(tuple.Get(field), val) > 0)
+						return tuple;
+				}
+
 			}
 			if(compare=="<"){
-				if(Int32.Parse(tuple.Get(field)) < Int32.Parse(val))
-					return tuple;
+				try{
+					if (float.Parse(tuple.Get(field)) < float.Parse(val))
+						return tuple;
+				}catch (Exception){
+					if (string.Compare(tuple.Get(field), val) < 0)
+						return tuple;
+				}
 			}
 			return null;
 		}

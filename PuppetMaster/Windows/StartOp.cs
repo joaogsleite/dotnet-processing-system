@@ -26,7 +26,7 @@ namespace DADStorm {
             try {
                 pm.StartOp(op.Text);
             }catch(Exception){
-                pm.print_log("Operator not found!");
+                pm.log("Operator not found!");
             }
             this.Close();
         }

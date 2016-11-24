@@ -24,7 +24,7 @@ namespace DADStorm {
             }
             catch (Exception) {
 				
-                pm.print_log("Operator or Replica not found!");
+                pm.log("Operator or Replica not found!");
             }
             this.Close();
         }

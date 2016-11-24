@@ -34,23 +34,23 @@ namespace DADStorm
 
 		public List<Operator> operators(){
 
-			string[] ops = content.Split(new string[]{"input_ops"}, StringSplitOptions.None);
+			string[] ops = content.Split(new string[]{"input ops"}, StringSplitOptions.None);
 			Dictionary<string,Operator> res = new Dictionary<string,Operator>();
 
 			string id = ops[0].Split(delimiters)[ops[0].Split(delimiters).Length - 2];
 			Operator op = new Operator(id);
 
 			for (int i = 1; i < ops.Length; i++){
-				string[] inputs = ops[i].Split(new string[] { "repl_fact" }, StringSplitOptions.None)[0].Split(',');
+				string[] inputs = ops[i].Split(new string[] { "rep fact" }, StringSplitOptions.None)[0].Split(',');
 				foreach (string input in inputs){
 					if (input.Contains(".")) op.addInputFile(input.Trim(delimiters));
 					else op.addInputOperator(res[input.Trim(delimiters)]);
 				}
 				op.setRouting(ops[i].Split(new string[] { "routing" }, StringSplitOptions.None)[1].Split(' ')[1]);
-				string[] address = ops[i].Split(new string[] { "address" }, StringSplitOptions.None)[1].Split(new string[] { "operator_spec" }, StringSplitOptions.None)[0].Split(',');
+				string[] address = ops[i].Split(new string[] { "address" }, StringSplitOptions.None)[1].Split(new string[] { "operator spec" }, StringSplitOptions.None)[0].Split(',');
 				foreach (string a in address) op.addReplica(a.Trim(delimiters));
 
-				string[] spec = ops[i].Split(new string[] { "operator_spec" }, StringSplitOptions.None)[1].Split(delimiters);
+				string[] spec = ops[i].Split(new string[] { "operator spec" }, StringSplitOptions.None)[1].Split(delimiters);
 				op.setOptions(spec[2]);
 
 				res.Add(id, op.changeMode(spec[1]));

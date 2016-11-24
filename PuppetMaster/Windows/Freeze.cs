@@ -27,7 +27,7 @@ namespace DADStorm {
                 pm.Freeze(op.Text, Int32.Parse(repl.Text));
             }
             catch (Exception) {
-                pm.print_log("Operator or Replica not found!");
+                pm.log("Operator or Replica not found!");
             }
             this.Close();
         }

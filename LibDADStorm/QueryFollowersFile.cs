@@ -2,9 +2,9 @@
 using System.Threading;
 
 namespace DADStorm {
-	public class ExampleCustomClass {
+	public class QueryFollowersFile {
 
-		public ExampleCustomClass() {}
+		public QueryFollowersFile() {}
 
 		public static Tuple getFollowers(Tuple tuple){
 			Monitor.Enter(tuple);

@@ -26,7 +26,7 @@ namespace DADStorm {
             try {
                 pm.Interval(op.Text,Int32.Parse(interval_value.Text));
             }catch(Exception){
-                pm.print_log("Operator not found!");
+                pm.log("Operator not found!");
             }
             this.Close();
         }

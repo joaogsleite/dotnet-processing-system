@@ -10,6 +10,7 @@ using System.Runtime.Serialization.Formatters;
 using System.Runtime.Remoting;
 using System.Net.Sockets;
 using System.Runtime.Remoting.Messaging;
+using System.Windows.Forms;
 
 namespace DADStorm {
     public class PuppetMaster : MarshalByRefObject, IPM {
@@ -21,7 +22,7 @@ namespace DADStorm {
 		private delegate void IntervalRemoteAsyncDelegate(int interval);
 		private delegate string StatusRemoteAsyncDelegate();
 		private Boolean full_logging = false;
-        public Func<string,string> print_log;
+		public TextBox log_box;
 
 		public PuppetMaster() {}
 
@@ -30,10 +31,14 @@ namespace DADStorm {
 		}
 
 		public void CreateOperators(List<Operator> ops) {
+			Operator last = ops.Last();
+			Boolean last_op = false;
 			foreach (Operator op in ops){
+				last_op = (op == last);
 				operators.Add(op.id,op);
 				foreach (string replica_url in op.replicas_url){
-					new Thread(()=>{ CreateReplica(op, replica_url); }).Start();
+					Console.WriteLine(replica_url);
+					CreateReplicaInThread(op, replica_url, last_op);
 					replicas_url.Add(replica_url);
 				}	
 			}
@@ -56,13 +61,16 @@ namespace DADStorm {
 					replicas_by_url.Add(repl_url, repl);
 					connected = true;
 				}catch(Exception){
-					print_log("Retring connect to "+repl_url);
+					log("Retring connect to "+repl_url);
 				}
 				Thread.Sleep(1000);
 			}
 		}
-
-		private void CreateReplica(Operator op, string replica_url){
+		private void CreateReplicaInThread(Operator op, string replica_url, Boolean last_repl){
+			new Thread(() => CreateReplica(op, replica_url, last_repl)).Start();
+		}
+		private void CreateReplica(Operator op, string replica_url, Boolean last_repl){
+			
 			string[] parts = replica_url.Split(':');
 			string machine = parts[1];
 
@@ -81,14 +89,14 @@ namespace DADStorm {
 					ChannelServices.RegisterChannel(channel, false);
 					pcs.Add(pcs_url, (IPCS)Activator.GetObject(typeof(IPCS), pcs_url));
 				}
-				pcs[pcs_url].createReplica(op.id,replica_url);
+				pcs[pcs_url].createReplica(op.id,replica_url,last_repl);
 				Monitor.Exit(pcs);
 			}
 			catch (RemotingException e){
-				print_log(e.ToString());
+				log(e.ToString());
 			}
 			catch (SocketException){
-				print_log("Could not locate server");
+				log("Could not locate server");
 			}
 		}
 
@@ -119,7 +127,7 @@ namespace DADStorm {
 				RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[repl_url].Start);
 				RemoteDel.BeginInvoke(null, null);
 			}
-			print_log(">> Start " + id);
+			log(">> Start " + id);
 		}
 		public void Status(){
 			foreach (string op_id in operators.Keys){
@@ -136,7 +144,7 @@ namespace DADStorm {
 
 				}
 			}
-			print_log(">> Status ");
+			log(">> Status ");
 		}
 		public void StatusCallBack(IAsyncResult ar){
 			StatusRemoteAsyncDelegate d = (StatusRemoteAsyncDelegate)((AsyncResult)ar).AsyncDelegate;
@@ -147,22 +155,22 @@ namespace DADStorm {
 				IntervalRemoteAsyncDelegate RemoteDel = new IntervalRemoteAsyncDelegate(replicas_by_url[repl_url].Interval);
 				RemoteDel.BeginInvoke(interval, null, null);
 			}
-			print_log(">> Interval " + id+ " " +interval);
+			log(">> Interval " + id+ " " +interval);
 		}
 		public void Crash(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Crash);
 			RemoteDel.BeginInvoke(null, null);
-			print_log(">> Crash " + op_id + " " + repl_id);
+			log(">> Crash " + op_id + " " + repl_id);
 		}
 		public void Freeze(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Freeze);
 			RemoteDel.BeginInvoke(null, null);
-			print_log(">> Freeze " + op_id + " " + repl_id);
+			log(">> Freeze " + op_id + " " + repl_id);
 		}
 		public void Unfreeze(string op_id, int repl_id){
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Unfreeze);
 			RemoteDel.BeginInvoke(null, null);
-			print_log(">> Unfreeze " + op_id + " " + repl_id);
+			log(">> Unfreeze " + op_id + " " + repl_id);
 		}
 		public void LoggingLevel(string level){
 			if(level=="full")
@@ -172,8 +180,13 @@ namespace DADStorm {
 		}
 
 		public void log(string text){
-			if(full_logging && print_log!=null)
-				print_log(text);
+			try{
+				if (full_logging && log_box != null)
+					log_box.AppendText("\n"+text);
+			}
+			catch (Exception){
+				Console.WriteLine("error in logging!");
+			}
 		}
     }
 }

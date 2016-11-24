@@ -7,6 +7,7 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
+using System.IO;
 
 namespace DADStorm{
 	public class Replica : MarshalByRefObject, IReplica {
@@ -19,9 +20,12 @@ namespace DADStorm{
 		public event SendHandler Send;
 		private IPM pm;
 		public delegate void SendHandler(Replica repl, EventArgs e);
+		private Boolean last_repl = false;
+			
 
-		public Replica(string op_id, string repl_url, string pm_url){
+		public Replica(string op_id, string repl_url, string pm_url, Boolean last_repl){
 			this.url = repl_url;
+			this.last_repl = last_repl;
 
 			BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
 			provider.TypeFilterLevel = TypeFilterLevel.Full;
@@ -87,23 +91,28 @@ namespace DADStorm{
 			foreach(string path in op.input_files){
 				string[] lines = System.IO.File.ReadAllLines(@path);
 				foreach (string line in lines)
-					queue.Enqueue(new Tuple(line.Split(',')));
+					if(!line.Contains("%"))
+						queue.Enqueue(new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None)));
 			}
 		}
 
 		private void ConnectReplicas(){
-			if(subscribed) return;
-			foreach(Operator input in op.input_ops){
+			if (subscribed) return;
+			foreach (Operator input in op.input_ops)
+			{
 				//foreach(string repl_url in input.replicas_url)
 				//PRIMARY TODO !!!
-				new Thread(()=>{
-					Subscribe(input.replicas_url[0]);	
+				new Thread(() =>
+				{
+					Subscribe(input.replicas_url[0]);
 				}).Start();
 
 			}
 			subscribed = true;
-		}
 
+			if (last_repl)
+				this.Send += new Replica.SendHandler(this.Output);
+		}
 		public Boolean ready(){
 			return subscribed;
 		}
@@ -126,6 +135,11 @@ namespace DADStorm{
 		private void Receive(Replica repl, EventArgs e){
 			queue.Enqueue((Tuple)e);
 		}
+		private void Output(Replica repl, EventArgs e){
+			using (StreamWriter file = new StreamWriter(@op.id+"-output.txt",true)){
+				file.WriteLine((Tuple)e);
+			}
+		}
 
 		private void log(string text){
 			pm.log(text);
@@ -140,6 +154,7 @@ namespace DADStorm{
 			string repl_url = args[0];
 			string op_id = args[1];
 			string pm_url = args[2];
+			Boolean last_repl = args[3] == "true" ? true : false;
 
 			int port = Int32.Parse(repl_url.Split(':')[2].Split('/')[0]);
 			string uri = repl_url.Split('/')[repl_url.Split('/').Length - 1];
@@ -153,7 +168,7 @@ namespace DADStorm{
 			TcpServerChannel channel = new TcpServerChannel(props,provider);
 			ChannelServices.RegisterChannel(channel, false);
 
-			Replica replica = new Replica(op_id,repl_url,pm_url);
+			Replica replica = new Replica(op_id,repl_url,pm_url,last_repl);
 			RemotingServices.Marshal(replica, uri, typeof(Replica));
 
 			// Dont close console

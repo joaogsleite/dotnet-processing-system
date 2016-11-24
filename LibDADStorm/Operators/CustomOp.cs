@@ -21,7 +21,6 @@ namespace DADStorm
 		}
 
 		public override Tuple execute(Tuple tuple){
-
 			Assembly assembly = Assembly.LoadFrom(dllName);
 			Type type = assembly.GetType("DADStorm."+className);
 			object ClassObj = Activator.CreateInstance(type);
@@ -30,6 +29,7 @@ namespace DADStorm
 
 			object result = type.InvokeMember(methodName,BindingFlags.Default | BindingFlags.InvokeMethod, 
 			                                  null, ClassObj, args);
+
 
 			return (Tuple) result;
 		}

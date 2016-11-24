@@ -18,9 +18,9 @@ namespace DADStorm {
 
 		public PCS() : base() {}
 
-		public void createReplica(string op_id, string repl_url){
+		public void createReplica(string op_id, string repl_url, Boolean last_repl){
 
-			string args = repl_url+" "+op_id+" "+pm_url;
+			string args = repl_url+" "+op_id+" "+pm_url+" "+(last_repl?"true":"false");
 			string exe_path = Replica.exe_path();
 
 			ProcessStartInfo info = new ProcessStartInfo(exe_path, args); 
