@@ -96,6 +96,10 @@ namespace DADStorm {
             }
         }
 
+		private void step(object sender, EventArgs e){
+			pm.executeCommand();
+		}
+
         private void status_Click(object sender, EventArgs e) {
             pm.Status();
         }

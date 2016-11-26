@@ -23,6 +23,7 @@ namespace DADStorm {
 		private delegate string StatusRemoteAsyncDelegate();
 		private Boolean full_logging = false;
 		public TextBox log_box;
+		private Queue<string> commands = new Queue<string>();
 
 		public PuppetMaster() {}
 
@@ -100,26 +101,32 @@ namespace DADStorm {
 			}
 		}
 
-		public void LoadCommands(List<string> commands){
+		public void LoadCommands(List<string> list){
+			list.ForEach(c => commands.Enqueue(c));
+		}
+
+		public Boolean executeCommand(){
+
+			if (commands.Count == 0) return false;
+					
+			string cmd = commands.Dequeue();
 			ThreadPool.QueueUserWorkItem(a => {
-				foreach(string cmd in commands){
-					if(cmd.Contains("Start"))
-						StartOp(cmd.Split(' ')[1]);
-					if(cmd.Contains("Interval"))
-						Interval(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-					if(cmd.Contains("Status"))
-						Status();
-					if(cmd.Contains("Crash"))
-						Crash(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-					if(cmd.Contains("Freeze"))
-						Freeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-					if(cmd.Contains("Unfreeze"))
-						Unfreeze(cmd.Split(' ')[1],Int32.Parse(cmd.Split(' ')[2]));
-					if(cmd.Contains("Wait"))
-						Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
-					Thread.Sleep(1000);
-				}
+				if (cmd.Contains("Start"))
+					StartOp(cmd.Split(' ')[1]);
+				if (cmd.Contains("Interval"))
+					Interval(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+				if (cmd.Contains("Status"))
+					Status();
+				if (cmd.Contains("Crash"))
+					Crash(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+				if (cmd.Contains("Freeze"))
+					Freeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+				if (cmd.Contains("Unfreeze"))
+					Unfreeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+				if (cmd.Contains("Wait"))
+					Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
 			});
+			return commands.Count > 0;
 		}
 
 		public void StartOp(string id){
