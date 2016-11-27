@@ -31,10 +31,11 @@
             this.crash = new System.Windows.Forms.Button();
             this.freeze = new System.Windows.Forms.Button();
             this.unfreeze = new System.Windows.Forms.Button();
-            this.load_config = new System.Windows.Forms.Button();
-            this.load_script = new System.Windows.Forms.Button();
             this.Intro = new System.Windows.Forms.Label();
             this.open_file = new System.Windows.Forms.OpenFileDialog();
+            this.load_config = new System.Windows.Forms.Button();
+            this.step_button = new System.Windows.Forms.Button();
+            this.all_button = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // exit
@@ -119,26 +120,6 @@
             this.unfreeze.UseVisualStyleBackColor = true;
             this.unfreeze.Click += new System.EventHandler(this.unfreeze_Click);
             // 
-            // load_config
-            // 
-            this.load_config.Location = new System.Drawing.Point(93, 84);
-            this.load_config.Name = "load_config";
-            this.load_config.Size = new System.Drawing.Size(120, 30);
-            this.load_config.TabIndex = 8;
-            this.load_config.Text = "Load config file";
-            this.load_config.UseVisualStyleBackColor = true;
-            this.load_config.Click += new System.EventHandler(this.load_config_Click);
-            // 
-            // load_script
-            // 
-            this.load_script.Location = new System.Drawing.Point(298, 84);
-            this.load_script.Name = "load_script";
-            this.load_script.Size = new System.Drawing.Size(120, 30);
-            this.load_script.TabIndex = 9;
-            this.load_script.Text = "Load script file";
-            this.load_script.UseVisualStyleBackColor = true;
-            this.load_script.Click += new System.EventHandler(this.load_script_Click);
-            // 
             // Intro
             // 
             this.Intro.AutoSize = true;
@@ -148,19 +129,50 @@
             this.Intro.Size = new System.Drawing.Size(440, 34);
             this.Intro.TabIndex = 10;
             this.Intro.Text = "Load a configuration file to start replicas. \r\nThen, you can load script files to" +
-                " give commands to created replicas.";
+    " give commands to created replicas.";
             // 
             // open_file
             // 
             this.open_file.FileName = "dadstorm.config";
+            // 
+            // load_config
+            // 
+            this.load_config.Location = new System.Drawing.Point(47, 73);
+            this.load_config.Name = "load_config";
+            this.load_config.Size = new System.Drawing.Size(100, 41);
+            this.load_config.TabIndex = 8;
+            this.load_config.Text = "Load file";
+            this.load_config.UseVisualStyleBackColor = true;
+            this.load_config.Click += new System.EventHandler(this.load_config_Click);
+            // 
+            // step_button
+            // 
+            this.step_button.Location = new System.Drawing.Point(338, 78);
+            this.step_button.Name = "step_button";
+            this.step_button.Size = new System.Drawing.Size(120, 30);
+            this.step_button.TabIndex = 11;
+            this.step_button.Text = "Run next command";
+            this.step_button.UseVisualStyleBackColor = true;
+            this.step_button.Click += new System.EventHandler(this.step_button_Click);
+            // 
+            // all_button
+            // 
+            this.all_button.Location = new System.Drawing.Point(183, 78);
+            this.all_button.Name = "all_button";
+            this.all_button.Size = new System.Drawing.Size(120, 30);
+            this.all_button.TabIndex = 12;
+            this.all_button.Text = "Run all commands";
+            this.all_button.UseVisualStyleBackColor = true;
+            this.all_button.Click += new System.EventHandler(this.all_button_Click);
             // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(504, 510);
+            this.Controls.Add(this.all_button);
+            this.Controls.Add(this.step_button);
             this.Controls.Add(this.Intro);
-            this.Controls.Add(this.load_script);
             this.Controls.Add(this.load_config);
             this.Controls.Add(this.unfreeze);
             this.Controls.Add(this.freeze);
@@ -187,10 +199,11 @@
         private System.Windows.Forms.Button crash;
         private System.Windows.Forms.Button freeze;
         private System.Windows.Forms.Button unfreeze;
-        private System.Windows.Forms.Button load_config;
-        private System.Windows.Forms.Button load_script;
         private System.Windows.Forms.Label Intro;
         private System.Windows.Forms.OpenFileDialog open_file;
+        private System.Windows.Forms.Button load_config;
+        private System.Windows.Forms.Button step_button;
+        private System.Windows.Forms.Button all_button;
     }
 }
 

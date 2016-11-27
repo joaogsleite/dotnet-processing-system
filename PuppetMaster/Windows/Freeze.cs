@@ -25,6 +25,7 @@ namespace DADStorm {
         private void start_Click(object sender, EventArgs e) {
             try {
                 pm.Freeze(op.Text, Int32.Parse(repl.Text));
+                pm.log(">> Start " + op.Text+" "+repl.Text);
             }
             catch (Exception) {
                 pm.log("Operator or Replica not found!");

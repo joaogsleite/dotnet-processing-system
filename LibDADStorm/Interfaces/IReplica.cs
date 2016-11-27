@@ -10,6 +10,7 @@ namespace DADStorm{
 		void Crash();
 		string Status();
 		void Start();
+        void Exit();
 		void Interval(int time);
 	}
 }

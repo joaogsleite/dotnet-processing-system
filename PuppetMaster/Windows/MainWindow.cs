@@ -17,11 +17,15 @@ namespace DADStorm {
     public partial class MainWindow : Form {
 
         private PuppetMaster pm;
+        private Boolean conf_loaded = false;
+        public static MainWindow instance = null;
+
         public MainWindow(PuppetMaster pm) {
             InitializeComponent();
             this.pm = pm;
             pm.log_box = this.logs;
 			logs.Text = "Welcome!";
+            instance = this;
         }
 
         [STAThread]
@@ -46,34 +50,31 @@ namespace DADStorm {
         }
 
         private void exit_Click(object sender, EventArgs e) {
+            pm.exit();
             this.Close();
         }
-
-		/*private string log(string new_line){
-			try{
-				logs.Text += "\n" + new_line;
-			}
-			catch (Exception){
-				Console.WriteLine("Error logging...");
-				Console.WriteLine(new_line);
-			}
-			return "";
-		}*/
 
         private void load_config_Click(object sender, EventArgs e) {
             DialogResult result = open_file.ShowDialog();
             if (result == DialogResult.OK) {
-               	log("Loading config file...");
+                 
+                log("Loading config file...");
                 string file = open_file.FileName;
 				try{
-					Parser p = new Parser(@file);
-
-					pm.LoggingLevel(p.logging_level());
-					pm.CreateOperators(p.operators());
-					pm.ConnectToReplicas();
-					Thread.Sleep(2000);
+				    Parser p = new Parser(@file);
+                    if (!conf_loaded){
+                        conf_loaded = true;
+                        pm.LoggingLevel(p.logging_level());
+                        log("Logging level: " + p.logging_level());
+                        pm.CreateOperators(p.operators());
+                        log("Creating operators...");
+                        pm.ConnectToReplicas();
+                        log("Connecting to replicas...");
+                        Thread.Sleep(2000);
+                    }
 					pm.LoadCommands(p.commands());
-				}
+                    log("Loading commands to execute...");
+                }
 				catch (Exception err){
 					log(err.ToString());
 				}
@@ -96,12 +97,9 @@ namespace DADStorm {
             }
         }
 
-		private void step(object sender, EventArgs e){
-			pm.executeCommand();
-		}
-
         private void status_Click(object sender, EventArgs e) {
             pm.Status();
+            log(">> Status");
         }
 
         private void start_op_Click(object sender, EventArgs e) {
@@ -129,8 +127,23 @@ namespace DADStorm {
             unfrze.Show();
         }
 
-		private void log(string text){
-			logs.AppendText("\n" + text);
-		}
+		public void log(string text){
+            this.Invoke((MethodInvoker)delegate (){
+                logs.AppendText("\r\n"+text);
+                Application.DoEvents();
+            });
+        }
+
+        private void step_button_Click(object sender, EventArgs e){
+            pm.executeCommand();
+        }
+
+        private void all_button_Click(object sender, EventArgs e){
+            Boolean more = true;
+            while (more){
+                more = pm.executeCommand();
+                Thread.Sleep(500);
+            }
+        }
     }
 }

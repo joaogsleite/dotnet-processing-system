@@ -21,7 +21,9 @@ namespace DADStorm {
         private void start_Click(object sender, EventArgs e) {
             try {
                 pm.Crash(op.Text,Int32.Parse(repl.Text));
-            }catch(Exception){
+                pm.log(">> Crash " + op.Text + " "+repl.Text);
+            }
+            catch(Exception){
                 //pm.print_log("Operator not found!");
             }
             this.Close();

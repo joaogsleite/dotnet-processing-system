@@ -21,6 +21,7 @@ namespace DADStorm {
         private void start_Click(object sender, EventArgs e) {
             try {
                 pm.Unfreeze(op.Text, Int32.Parse(repl.Text));
+                pm.log(">> Unfreeze " + op.Text+" "+repl.Text);
             }
             catch (Exception) {
 				

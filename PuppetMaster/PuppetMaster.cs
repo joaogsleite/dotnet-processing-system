@@ -45,6 +45,12 @@ namespace DADStorm {
 			}
 		}
 
+        public void exit(){
+            foreach (IReplica repl in replicas_by_url.Values){
+                try{ repl.Exit(); }catch (Exception) { }           
+            }              
+        }
+
 		public void ConnectToReplicas(){
 			foreach(string repl_url in replicas_url){
 				new Thread(()=>{ connectToReplica(repl_url); }).Start();
@@ -102,82 +108,80 @@ namespace DADStorm {
 		}
 
 		public void LoadCommands(List<string> list){
+            log("Loading commands from config file...");
 			list.ForEach(c => commands.Enqueue(c));
 		}
 
 		public Boolean executeCommand(){
 
-			if (commands.Count == 0) return false;
+            if (commands.Count == 0) return false;
 					
 			string cmd = commands.Dequeue();
-			ThreadPool.QueueUserWorkItem(a => {
-				if (cmd.Contains("Start"))
-					StartOp(cmd.Split(' ')[1]);
-				if (cmd.Contains("Interval"))
-					Interval(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
-				if (cmd.Contains("Status"))
-					Status();
-				if (cmd.Contains("Crash"))
-					Crash(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
-				if (cmd.Contains("Freeze"))
-					Freeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
-				if (cmd.Contains("Unfreeze"))
-					Unfreeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
-				if (cmd.Contains("Wait"))
-					Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
-			});
-			return commands.Count > 0;
+            log(">> " + cmd);
+			
+            if (cmd.Contains("Wait"))
+                Thread.Sleep(Int32.Parse(cmd.Split(' ')[1]));
+            else if (cmd.Contains("Status"))
+                Status();
+            else{
+                ThreadPool.QueueUserWorkItem(a => {
+                    if (cmd.Contains("Start"))
+                        StartOp(cmd.Split(' ')[1]);
+                    if (cmd.Contains("Interval"))
+                        Interval(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+                    
+                    if (cmd.Contains("Freeze"))
+                        Freeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+                    if (cmd.Contains("Unfreeze"))
+                        Unfreeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
+                });
+            }
+            return commands.Count > 0;
 		}
 
 		public void StartOp(string id){
-			foreach(string repl_url in operators[id].replicas_url){
+            foreach (string repl_url in operators[id].replicas_url){
 				RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[repl_url].Start);
 				RemoteDel.BeginInvoke(null, null);
 			}
-			log(">> Start " + id);
+			
 		}
 		public void Status(){
-			foreach (string op_id in operators.Keys){
-				foreach (string repl_url in operators[op_id].replicas_url){
-					try{
-						//AsyncCallback cb = new AsyncCallback(StatusCallBack);
-						StatusRemoteAsyncDelegate RemoteDel = new StatusRemoteAsyncDelegate(replicas_by_url[repl_url].Status);
-						//RemoteDel.BeginInvoke(cb, null);
-						RemoteDel.BeginInvoke(null, null);
-					}
-					catch (Exception){
-						log("[" + op_id + " " + repl_url + "] crashed!");
-					}
-
-				}
-			}
-			log(">> Status ");
+            foreach (string op_id in operators.Keys){
+                foreach (string repl_url in operators[op_id].replicas_url){
+                    RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(()=>{
+                        try{
+                            replicas_by_url[repl_url].Status();
+                        }catch (Exception) {
+                            Console.WriteLine("Replica crashed!");
+                            MainWindow.instance.log("[" + op_id + " " + repl_url + "] crashed!");
+                        }
+                    });
+                    RemoteDel.BeginInvoke(null, null);
+                }
+			}		
 		}
 		public void StatusCallBack(IAsyncResult ar){
 			StatusRemoteAsyncDelegate d = (StatusRemoteAsyncDelegate)((AsyncResult)ar).AsyncDelegate;
 			log(d.EndInvoke(ar));
 		}
 		public void Interval(string id, int interval){
-			foreach(string repl_url in operators[id].replicas_url){
+            foreach (string repl_url in operators[id].replicas_url){
 				IntervalRemoteAsyncDelegate RemoteDel = new IntervalRemoteAsyncDelegate(replicas_by_url[repl_url].Interval);
 				RemoteDel.BeginInvoke(interval, null, null);
-			}
-			log(">> Interval " + id+ " " +interval);
+			}			
 		}
 		public void Crash(string op_id, int repl_id){
-			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Crash);
-			RemoteDel.BeginInvoke(null, null);
-			log(">> Crash " + op_id + " " + repl_id);
+            RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Crash);
+			RemoteDel.BeginInvoke(null, null);			
 		}
 		public void Freeze(string op_id, int repl_id){
-			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Freeze);
-			RemoteDel.BeginInvoke(null, null);
-			log(">> Freeze " + op_id + " " + repl_id);
+            RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Freeze);
+			RemoteDel.BeginInvoke(null, null);		
 		}
 		public void Unfreeze(string op_id, int repl_id){
-			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Unfreeze);
-			RemoteDel.BeginInvoke(null, null);
-			log(">> Unfreeze " + op_id + " " + repl_id);
+            RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[operators[op_id].replicas_url[repl_id]].Unfreeze);
+			RemoteDel.BeginInvoke(null, null);		
 		}
 		public void LoggingLevel(string level){
 			if(level=="full")
@@ -188,11 +192,16 @@ namespace DADStorm {
 
 		public void log(string text){
 			try{
-				if (full_logging && log_box != null)
-					log_box.AppendText("\n"+text);
+				if (log_box != null){
+                    if(full_logging)
+                        log_box.AppendText("\r\n" + text);
+                    else if(!text.Contains("tuple"))
+                        log_box.AppendText("\r\n" + text);
+                    Application.DoEvents();
+                }			
 			}
 			catch (Exception){
-				Console.WriteLine("error in logging!");
+				//Console.WriteLine("error in logging!");
 			}
 		}
     }

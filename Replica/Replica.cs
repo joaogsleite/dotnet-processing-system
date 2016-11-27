@@ -37,7 +37,7 @@ namespace DADStorm{
 
 			this.op = pm.get_operator_by_id(op_id);
 
-			string start_text = "[" + op_id + " " + url + "] started!";
+			string start_text = "[" + op_id + " " + url + "] created!";
 			Console.WriteLine(start_text);
 			pm.log(start_text);
 
@@ -65,20 +65,27 @@ namespace DADStorm{
 		}
 
 		public void Freeze(){
+            this.Status();
 			processing = false;
 		}
 
 		public void Unfreeze(){
 			Start();
+            this.Status();
 		}
 
 		public void Crash(){
-			Environment.Exit(1);
+            //Environment.Exit(1);
+            Process.GetCurrentProcess().Kill();
 		}
+        public void Exit(){
+            Environment.Exit(0);
+            Process.GetCurrentProcess().Kill();
+        }
 
 		public string Status(){
 			string text = "[" + op.id + " " + url + "] ";
-			text += processing ? "processing " : " ";
+			text += processing ? "processing " : "frozen";
 			Console.WriteLine(text);
 			return text;
 		}
