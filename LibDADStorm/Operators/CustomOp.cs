@@ -20,7 +20,7 @@ namespace DADStorm
 			this.methodName = options.Split(',')[2];
 		}
 
-		public override Tuple execute(Tuple tuple){
+		public override List<Tuple> execute(Tuple tuple){
 			Assembly assembly = Assembly.LoadFrom(dllName);
 			Type type = assembly.GetType("DADStorm."+className);
 			object ClassObj = Activator.CreateInstance(type);
@@ -31,7 +31,7 @@ namespace DADStorm
 			                                  null, ClassObj, args);
 
 
-			return (Tuple) result;
+			return (List<Tuple>) result;
 		}
 	}
 }

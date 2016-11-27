@@ -70,8 +70,10 @@ namespace DADStorm{
 			return res;
 		}
 
-		public virtual Tuple execute(Tuple tuple){
-			return tuple;
+		public virtual List<Tuple> execute(Tuple tuple){
+            List<Tuple> tuples = new List<Tuple>();
+            tuples.Add(tuple);
+            return tuples;
 		}
 	}
 }

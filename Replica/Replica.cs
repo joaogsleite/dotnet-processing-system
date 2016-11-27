@@ -54,10 +54,21 @@ namespace DADStorm{
 			processing = true;
 			while(processing){
 				if(queue.Count > 0 & Send != null){
-					Tuple tuple = op.execute(queue.Dequeue());
-					if(tuple != null){
-						Send(this, (EventArgs)tuple);
-						log("tuple "+url+", <"+tuple+">");
+                    Console.WriteLine("tuples to process...");
+					List<Tuple> tuples = op.execute(queue.Dequeue());
+                    Console.WriteLine("tuples: ");
+                    Console.WriteLine(tuples);
+                    Console.WriteLine(tuples.Count);
+                    if (tuples != null) {
+                        if(tuples.Count > 0) {
+                            foreach (Tuple t in tuples) {
+                                Console.WriteLine("new tuple: "+t);
+                                Send(this, (EventArgs)t);
+                                Console.WriteLine("new tuple2s: " + t);
+                                Console.WriteLine(t);
+                                log("tuple " + url + ", <" + t + ">");
+                            }
+                        }           
 					}
 				}
 				Thread.Sleep(1000);
@@ -98,8 +109,11 @@ namespace DADStorm{
 			foreach(string path in op.input_files){
 				string[] lines = System.IO.File.ReadAllLines(@path);
 				foreach (string line in lines)
-					if(!line.Contains("%"))
-						queue.Enqueue(new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None)));
+                    if (!line.Contains("%")) {
+                        Console.WriteLine("Reading line from " + @path + "...");
+                        queue.Enqueue(new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None)));
+                    }
+						
 			}
 		}
 
@@ -118,7 +132,7 @@ namespace DADStorm{
 			subscribed = true;
 
 			if (last_repl)
-				this.Send += new Replica.SendHandler(this.Output);
+				this.Send += new SendHandler(this.Output);
 		}
 		public Boolean ready(){
 			return subscribed;
@@ -130,16 +144,17 @@ namespace DADStorm{
 			while(!success){
 				try{
 					repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
-					repl.Send += new Replica.SendHandler(this.Receive);
+					repl.Send += new SendHandler(this.Receive);
 					success = true;
+                    Console.WriteLine(repl_url+" subscribed!");
 				} catch(Exception){
 					Console.WriteLine("Retrying connect to "+repl_url);	
 				}
 				Thread.Sleep(1000);
 			}
-
 		}
 		private void Receive(Replica repl, EventArgs e){
+            Console.WriteLine("tuple received!");
 			queue.Enqueue((Tuple)e);
 		}
 		private void Output(Replica repl, EventArgs e){

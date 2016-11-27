@@ -16,13 +16,15 @@ namespace DADStorm
 			this.field = Int32.Parse(options);
 		}
 
-		public override Tuple execute(Tuple tuple){
+		public override List<Tuple> execute(Tuple tuple){
+            List<Tuple> res = new List<Tuple>();
 			foreach(Tuple t in tuples){
 				if(t.Get(field)==tuple.Get(field))
 					return null;
 			}
 			tuples.Add(tuple);
-			return tuple;
+            res.Add(tuple);
+			return res;
 		}
 
 

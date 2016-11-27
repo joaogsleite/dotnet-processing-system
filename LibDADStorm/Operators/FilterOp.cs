@@ -23,32 +23,34 @@ namespace DADStorm
 				this.val = this.val.Substring(0,this.val.Length-1);*/
 		}
 
-		public override Tuple execute(Tuple tuple){
+		public override List<Tuple> execute(Tuple tuple){
+
+            List<Tuple> res = new List<Tuple>();
 
 			if(compare=="="){
-				if(tuple.Get(field).Equals(val))
-					return tuple;
+                if (tuple.Get(field).Equals(val))
+                    res.Add(tuple);
 			}
 			if(compare==">"){
 				try{
 					if (float.Parse(tuple.Get(field)) > float.Parse(val))
-						return tuple;
+						res.Add(tuple);
 				}catch (Exception){
 					if (string.Compare(tuple.Get(field), val) > 0)
-						return tuple;
+						res.Add(tuple);
 				}
 
 			}
 			if(compare=="<"){
 				try{
 					if (float.Parse(tuple.Get(field)) < float.Parse(val))
-						return tuple;
+						res.Add(tuple);
 				}catch (Exception){
 					if (string.Compare(tuple.Get(field), val) < 0)
-						return tuple;
-				}
+                        res.Add(tuple);
+                }
 			}
-			return null;
+			return res;
 		}
 	}
 }
