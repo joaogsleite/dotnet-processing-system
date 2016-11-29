@@ -50,29 +50,30 @@ namespace DADStorm{
 		}
 
 		public void Start(){
-
-			processing = true;
-			while(processing){
-				if(queue.Count > 0 & Send != null){
-                    Console.WriteLine("tuples to process...");
-					List<Tuple> tuples = op.execute(queue.Dequeue());
-                    Console.WriteLine("tuples: ");
-                    Console.WriteLine(tuples);
-                    Console.WriteLine(tuples.Count);
-                    if (tuples != null) {
-                        if(tuples.Count > 0) {
-                            foreach (Tuple t in tuples) {
-                                Console.WriteLine("new tuple: "+t);
-                                Send(this, (EventArgs)t);
-                                Console.WriteLine("new tuple2s: " + t);
-                                Console.WriteLine(t);
-                                log("tuple " + url + ", <" + t + ">");
+            new Thread(() => {
+                processing = true;
+                while (processing) {
+                    if (queue.Count > 0 & Send != null) {
+                        Console.WriteLine("tuples to process...");
+                        List<Tuple> tuples = op.execute(queue.Dequeue());
+                        Console.WriteLine("tuples: ");
+                        Console.WriteLine(tuples);
+                        Console.WriteLine(tuples.Count);
+                        if (tuples != null) {
+                            if (tuples.Count > 0) {
+                                foreach (Tuple t in tuples) {
+                                    Console.WriteLine("new tuple: " + t);
+                                    this.Send(this, (EventArgs)t);
+                                    Console.WriteLine("new tuple2s: " + t);
+                                    Console.WriteLine(t);
+                                    log("tuple " + url + ", <" + t + ">");
+                                }
                             }
-                        }           
-					}
-				}
-				Thread.Sleep(1000);
-			}
+                        }
+                    }
+                    Thread.Sleep(1000);
+                }
+            }).Start();
 		}
 
 		public void Freeze(){
@@ -97,7 +98,8 @@ namespace DADStorm{
 		public string Status(){
 			string text = "[" + op.id + " " + url + "] ";
 			text += processing ? "processing " : "frozen";
-			Console.WriteLine(text);
+            log(text);
+            Console.WriteLine(text);     
 			return text;
 		}
 
@@ -123,10 +125,7 @@ namespace DADStorm{
 			{
 				//foreach(string repl_url in input.replicas_url)
 				//PRIMARY TODO !!!
-				new Thread(() =>
-				{
-					Subscribe(input.replicas_url[0]);
-				}).Start();
+				Subscribe(input.replicas_url[0]);
 
 			}
 			subscribed = true;
@@ -139,23 +138,35 @@ namespace DADStorm{
 		}
 
 		private void Subscribe(String repl_url){
-			Replica repl = null;
-			Boolean success = false;
-			while(!success){
-				try{
-					repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
-					repl.Send += new SendHandler(this.Receive);
-					success = true;
-                    Console.WriteLine(repl_url+" subscribed!");
-				} catch(Exception){
-					Console.WriteLine("Retrying connect to "+repl_url);	
-				}
-				Thread.Sleep(1000);
-			}
+            new Thread(() => {
+                Boolean success = false;
+                while (!success) {
+                    try {
+                        //TcpChannel channel = new TcpChannel();
+                        //ChannelServices.RegisterChannel(channel, false);
+                        BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+                        provider.TypeFilterLevel = TypeFilterLevel.Full;
+                        IDictionary props = new Hashtable();
+                        props["name"] = repl_url + url;
+                        TcpServerChannel channel = new TcpServerChannel(props, provider);
+                        ChannelServices.RegisterChannel(channel, false);
+                        Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
+                        repl.Send += new SendHandler(this.Receive);
+                        success = true;
+                        Console.WriteLine(repl_url + " subscribed!");
+                    } catch (Exception) {
+                        Console.WriteLine("Retrying connect to " + repl_url);
+                    }
+                    Thread.Sleep(1000);
+                }
+            }).Start();
 		}
-		private void Receive(Replica repl, EventArgs e){
-            Console.WriteLine("tuple received!");
-			queue.Enqueue((Tuple)e);
+
+		public void Receive(Replica repl, EventArgs e){
+            new Thread(() => {
+                Console.WriteLine("tuple received!");
+                queue.Enqueue((Tuple)e);
+            }).Start(); 
 		}
 		private void Output(Replica repl, EventArgs e){
 			using (StreamWriter file = new StreamWriter(@op.id+"-output.txt",true)){

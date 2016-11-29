@@ -18,14 +18,11 @@ namespace DADStorm {
 
         private PuppetMaster pm;
         private Boolean conf_loaded = false;
-        public static MainWindow instance = null;
 
         public MainWindow(PuppetMaster pm) {
             InitializeComponent();
             this.pm = pm;
-            pm.log_box = this.logs;
 			logs.Text = "Welcome!";
-            instance = this;
         }
 
         [STAThread]
@@ -46,7 +43,9 @@ namespace DADStorm {
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainWindow(pm));
+            MainWindow window = new MainWindow(pm);
+            pm.setWindow(window);
+            Application.Run(window);     
         }
 
         private void exit_Click(object sender, EventArgs e) {
@@ -127,13 +126,6 @@ namespace DADStorm {
             unfrze.Show();
         }
 
-		public void log(string text){
-            this.Invoke((MethodInvoker)delegate (){
-                logs.AppendText("\r\n"+text);
-                Application.DoEvents();
-            });
-        }
-
         private void step_button_Click(object sender, EventArgs e){
             pm.executeCommand();
         }
@@ -144,6 +136,17 @@ namespace DADStorm {
                 more = pm.executeCommand();
                 Thread.Sleep(500);
             }
+        }
+
+        delegate void UpdateLog(string text);
+        private void update_log(string text) {
+            logs.AppendText("\r\n" + text);
+        }
+        public void log(string text) {
+            if (logs.InvokeRequired) {
+                UpdateLog update = update_log;
+                this.Invoke(update, text);
+            } else update_log(text);
         }
     }
 }

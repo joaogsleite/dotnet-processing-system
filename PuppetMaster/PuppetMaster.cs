@@ -24,8 +24,13 @@ namespace DADStorm {
 		private Boolean full_logging = false;
 		public TextBox log_box;
 		private Queue<string> commands = new Queue<string>();
+        private MainWindow window;
 
-		public PuppetMaster() {}
+		public PuppetMaster() : base() { }
+
+        public void setWindow(MainWindow w) {
+            this.window = w;
+        }
 
 		public Operator get_operator_by_id(string op_id){
 			return operators[op_id];
@@ -154,7 +159,7 @@ namespace DADStorm {
                             replicas_by_url[repl_url].Status();
                         }catch (Exception) {
                             Console.WriteLine("Replica crashed!");
-                            MainWindow.instance.log("[" + op_id + " " + repl_url + "] crashed!");
+                            log("[" + op_id + " " + repl_url + "] crashed!");
                         }
                     });
                     RemoteDel.BeginInvoke(null, null);
@@ -188,21 +193,17 @@ namespace DADStorm {
 				this.full_logging = true;
 			if(level=="light")
 				this.full_logging = false;
-		}
+        }
 
 		public void log(string text){
-			try{
-				if (log_box != null){
-                    if(full_logging)
-                        log_box.AppendText("\r\n" + text);
-                    else if(!text.Contains("tuple"))
-                        log_box.AppendText("\r\n" + text);
-                    Application.DoEvents();
-                }			
-			}
-			catch (Exception){
-				//Console.WriteLine("error in logging!");
-			}
+            new Thread(() => {
+                if (window != null) {
+                    if (full_logging) //Console.WriteLine("LOG: " + text);
+                        window.log(text);
+                    else if (!text.Contains("tuple")) //Console.WriteLine("LOG: " + text);
+                        window.log(text);
+                }
+            }).Start();     			
 		}
     }
 }
