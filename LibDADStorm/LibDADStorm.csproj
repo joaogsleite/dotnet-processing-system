@@ -44,10 +44,5 @@
     <Compile Include="Interfaces\IPM.cs" />
     <Compile Include="Operators\OutputOp.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="followers.dat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
