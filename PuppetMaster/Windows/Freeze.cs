@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace DADStorm {
@@ -23,13 +24,17 @@ namespace DADStorm {
         }
 
         private void start_Click(object sender, EventArgs e) {
-            try {
-                pm.Freeze(op.Text, Int32.Parse(repl.Text));
-                pm.log(">> Start " + op.Text+" "+repl.Text);
-            }
-            catch (Exception) {
-                pm.log("Operator or Replica not found!");
-            }
+            string op_id = op.Text;
+            int repl_id = Int32.Parse(repl.Text);
+
+            new Thread(() => {
+                try {
+                    pm.Freeze(op_id, repl_id);
+                    pm.log(">> Freeze " + op_id + " " + repl_id);
+                } catch (Exception) {
+                    pm.log("Operator or Replica not found!");
+                }
+            }).Start();
             this.Close();
         }
     }

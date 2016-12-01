@@ -28,6 +28,29 @@ namespace DADStorm {
 
 		public PuppetMaster() : base() { }
 
+        [STAThread]
+        public static void Main() {
+
+            PuppetMaster pm = new PuppetMaster();
+
+            new Thread(() => {
+                BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+                provider.TypeFilterLevel = TypeFilterLevel.Full;
+                IDictionary props = new Hashtable();
+                props["port"] = 10001;
+                props["name"] = "tcp10001";
+                TcpServerChannel channel = new TcpServerChannel(props, provider);
+                ChannelServices.RegisterChannel(channel, false);
+                RemotingServices.Marshal(pm, "pm", typeof(IPM));
+            }).Start();
+
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            MainWindow window = new MainWindow(pm);
+            pm.setWindow(window);
+            Application.Run(window);
+        }
+
         public void setWindow(MainWindow w) {
             this.window = w;
         }

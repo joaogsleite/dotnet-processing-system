@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace DADStorm {
@@ -23,12 +24,15 @@ namespace DADStorm {
         }
 
         private void start_Click(object sender, EventArgs e) {
-            try {
-                pm.StartOp(op.Text);
-                pm.log(">> Start " + op.Text);
-            }catch(Exception){
-                pm.log("Operator not found!");
-            }
+            string op_id = op.Text;
+            new Thread(() => {
+                try {
+                    pm.StartOp(op_id);
+                    pm.log(">> Start " + op_id);
+                } catch (Exception) {
+                    pm.log("Operator not found!");
+                }
+            }).Start();
             this.Close();
         }
     }

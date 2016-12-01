@@ -25,29 +25,6 @@ namespace DADStorm {
 			logs.Text = "Welcome!";
         }
 
-        [STAThread]
-        public static void Main() {
-
-            PuppetMaster pm = new PuppetMaster();
-
-            new Thread(() => {
-                BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
-                provider.TypeFilterLevel = TypeFilterLevel.Full;
-                IDictionary props = new Hashtable();
-                props["port"] = 10001;
-                props["name"] = "tcp10001";
-                TcpServerChannel channel = new TcpServerChannel(props, provider);
-                ChannelServices.RegisterChannel(channel, false);
-                RemotingServices.Marshal(pm, "pm", typeof(IPM));
-            }).Start();
-
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            MainWindow window = new MainWindow(pm);
-            pm.setWindow(window);
-            Application.Run(window);     
-        }
-
         private void exit_Click(object sender, EventArgs e) {
             pm.exit();
             this.Close();
@@ -56,29 +33,29 @@ namespace DADStorm {
         private void load_config_Click(object sender, EventArgs e) {
             DialogResult result = open_file.ShowDialog();
             if (result == DialogResult.OK) {
-                 
+
                 log("Loading config file...");
                 string file = open_file.FileName;
-				try{
-				    Parser p = new Parser(@file);
-                    if (!conf_loaded){
-                        conf_loaded = true;
-                        pm.LoggingLevel(p.logging_level());
-                        log("Logging level: " + p.logging_level());
-                        pm.CreateOperators(p.operators());
-                        log("Creating operators...");
-                        pm.ConnectToReplicas();
-                        log("Connecting to replicas...");
-                        Thread.Sleep(2000);
-                    }
-					pm.LoadCommands(p.commands());
-                    log("Loading commands to execute...");
+                try {
+                    new Thread(() => {
+                        Parser p = new Parser(@file);
+                        if (!conf_loaded) {
+                            conf_loaded = true;
+                            pm.LoggingLevel(p.logging_level());
+                            log("Logging level: " + p.logging_level());
+                            pm.CreateOperators(p.operators());
+                            log("Creating operators...");
+                            pm.ConnectToReplicas();
+                            log("Connecting to replicas...");
+                            Thread.Sleep(2000);
+                        }
+                        pm.LoadCommands(p.commands());
+                        log("Loading commands to execute...");
+                    }).Start();
+                } catch (Exception err) {
+                    log(err.ToString());
                 }
-				catch (Exception err){
-					log(err.ToString());
-				}
-            }
-            else {
+            } else {
                 log("Config file selected not valid!");
             }
         }
@@ -86,10 +63,12 @@ namespace DADStorm {
         private void load_script_Click(object sender, EventArgs e) {
             DialogResult result = open_file.ShowDialog();
             if (result == DialogResult.OK) {
-                log("Loading script file...");
                 string file = open_file.FileName;
-                Parser p = new Parser(@file);
-                pm.LoadCommands(p.commands());
+                new Thread(() => {
+                    log("Loading script file...");
+                    Parser p = new Parser(@file);
+                    pm.LoadCommands(p.commands());
+                }).Start();
             }
             else {
                 log("Script file selected not valid!");
@@ -97,8 +76,10 @@ namespace DADStorm {
         }
 
         private void status_Click(object sender, EventArgs e) {
-            pm.Status();
-            log(">> Status");
+            new Thread(() => {
+                log(">> Status");
+                pm.Status();
+            }).Start();
         }
 
         private void start_op_Click(object sender, EventArgs e) {
@@ -127,15 +108,19 @@ namespace DADStorm {
         }
 
         private void step_button_Click(object sender, EventArgs e){
-            pm.executeCommand();
+            new Thread(() => {
+                pm.executeCommand();
+            }).Start();
         }
 
         private void all_button_Click(object sender, EventArgs e){
-            Boolean more = true;
-            while (more){
-                more = pm.executeCommand();
-                Thread.Sleep(500);
-            }
+            new Thread(() => {
+                Boolean more = true;
+                while (more) {
+                    more = pm.executeCommand();
+                    Thread.Sleep(500);
+                }
+            }).Start();
         }
 
         delegate void UpdateLog(string text);
