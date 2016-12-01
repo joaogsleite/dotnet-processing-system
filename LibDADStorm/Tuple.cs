@@ -16,6 +16,20 @@ namespace DADStorm{
             items = new List<string>();
         }
 
+        public Tuple(List<string> input) {
+            this.items = input;
+        }
+
+        public Tuple(IList<string> input) {
+            this.items = new List<string>();
+            foreach(string item in input)
+                this.items.Add(item);
+        }
+
+        public List<string> toList() {
+            return items;
+        }
+
         public void Merge(Tuple t) {
             for (int i = 1; i <= t.Count(); i++)
                 items.Add(t.Get(i));

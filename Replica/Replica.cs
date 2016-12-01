@@ -54,18 +54,11 @@ namespace DADStorm{
                 processing = true;
                 while (processing) {
                     if (queue.Count > 0 & Send != null) {
-                        Console.WriteLine("tuples to process...");
                         List<Tuple> tuples = op.execute(queue.Dequeue());
-                        Console.WriteLine("tuples: ");
-                        Console.WriteLine(tuples);
-                        Console.WriteLine(tuples.Count);
                         if (tuples != null) {
                             if (tuples.Count > 0) {
                                 foreach (Tuple t in tuples) {
-                                    Console.WriteLine("new tuple: " + t);
                                     this.Send(this, (EventArgs)t);
-                                    Console.WriteLine("new tuple2s: " + t);
-                                    Console.WriteLine(t);
                                     log("tuple " + url + ", <" + t + ">");
                                 }
                             }

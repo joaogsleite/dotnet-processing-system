@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -41,13 +41,13 @@
     <Compile Include="Operators\Operator.cs" />
     <Compile Include="Interfaces\IPCS.cs" />
     <Compile Include="Interfaces\IReplica.cs" />
-    <Compile Include="QueryFollowersFile.cs" />
     <Compile Include="Interfaces\IPM.cs" />
     <Compile Include="Operators\OutputOp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Operators\" />
-    <Folder Include="Interfaces\" />
+    <EmbeddedResource Include="followers.dat">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

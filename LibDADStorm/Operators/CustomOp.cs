@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 
@@ -20,20 +21,59 @@ namespace DADStorm
 			this.methodName = options.Split(',')[2];
 		}
 
-		public override List<Tuple> execute(Tuple tuple){
-            /*Assembly assembly = Assembly.LoadFrom(dllName);
-			Type type = assembly.GetType("DADStorm."+className);
-			object ClassObj = Activator.CreateInstance(type);
+		public override List<Tuple> execute(Tuple input){
 
-			object[] args = new object[] { tuple };
+            List<Tuple> output = new List<Tuple>();
 
-			object result = type.InvokeMember(methodName,BindingFlags.Default | BindingFlags.InvokeMethod, 
-			                                  null, ClassObj, args);
+            byte[] code = File.ReadAllBytes(dllName);
+            Assembly assembly = Assembly.Load(code);
+
+            // Walk through each type in the assembly looking for our class
+            foreach (Type type in assembly.GetTypes()) {
+                if (type.IsClass == true) {
+                    if (type.FullName.EndsWith("." + className)) {
+
+                        // create an instance of the object
+                        object ClassObj = Activator.CreateInstance(type);
+
+                        // Dynamically Invoke the method
+                        List<string> l = input.toList();
+
+                        object[] methodArgs = new object[] { l };
+                        object resultObject = type.InvokeMember(methodName,
+                          BindingFlags.Default | BindingFlags.InvokeMethod,
+                               null,
+                               ClassObj,
+                               methodArgs);
+                        IList<IList<string>> result = (IList<IList<string>>)resultObject;
+                        Console.WriteLine("Custom operator result was: ");
+                        foreach (IList<string> tuple in result) 
+                            output.Add(new Tuple(tuple));
+                        
+                        return output;
+                    }
+                }
+            }
+            return output;
+            /*
+            Assembly assembly = Assembly.LoadFrom(dllName);
+            Type type = assembly.GetType("DADStorm."+className);
+            object ClassObj = Activator.CreateInstance(type);
+
+            object[] args = new object[] { tuple.toList() };
+
+            object output = type.InvokeMember(methodName,BindingFlags.Default | BindingFlags.InvokeMethod, 
+                                                null, ClassObj, args);
+
+            List<IList<string>> result = (List<IList<string>>) output;
+
+            List<Tuple> res = new List<Tuple>();
+            foreach (List<string> list in result)
+                res.Add(new Tuple(list));      
+
+            return (List<Tuple>) res;
 
             */
-            List<Tuple> result = new List<Tuple>();
-            result.Add(tuple);
-			return (List<Tuple>) result;
-		}
+        }
 	}
 }
