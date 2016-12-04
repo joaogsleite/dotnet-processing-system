@@ -49,9 +49,9 @@ namespace DADStorm{
 
         private int getMyId(){
             int i = 0;
-            foreach(string repl_url in op.replicas_url){
-                i++;
+            foreach(string repl_url in op.replicas_url){   
                 if (repl_url == this.url) break;
+                i++;
             }
             return i;
         }
@@ -170,65 +170,68 @@ namespace DADStorm{
 
         public void SendTuple(Tuple tuple){
             string routing = ((Replica)(this.Send.Target)).routing();
-            
-            if (routing.Equals("primary")){
-                Console.WriteLine("ROUTING: primary");
+
+            if (routing.Contains("primary")) {
+                //Console.WriteLine("Routing: primary");
                 int repl_id = -1;
                 Boolean success = false;
-                while (!success){
+                while (!success) {
                     repl_id++;
                     try {
-                        if (this.Send.GetInvocationList().Length-1 < repl_id) return;
+                        if (this.Send.GetInvocationList().Length - 1 < repl_id) return;
                         SendHandler send = (SendHandler)Array.Find(this.Send.GetInvocationList(),
                                                    r => ((Replica)(r.Target)).id == repl_id);
                         send(this, (EventArgs)tuple);
                         success = true;
-                    } catch (Exception) { success = false; }
+                    }
+                    catch (Exception) {
+                        Console.WriteLine("Failed to send tuple to replica " + repl_id);
+                        Console.WriteLine("Trying to send tuple to replica " + (repl_id++)+"...");
+                        success = false;
+                    }
                 }
-            }else {
-                SendHandler send = (SendHandler)Array.Find(this.Send.GetInvocationList(),
-                                                   r => ((Replica)(r.Target)).id == 0);
-                send(this, (EventArgs)tuple);
-                Console.WriteLine("Routing:");
-                Console.WriteLine(routing);
-            }  
-            /*else if (routing.Equals("random")){
-                List<SendHandler> handlers = new List<SendHandler>((SendHandler[])this.Send.GetInvocationList());
+            }
+            if (routing.Contains("hashing")) {
+                int field_index = Int32.Parse(routing.Split('(')[1].Split(')')[0]);
+                //Console.WriteLine("Routing: hashing(" + field + ")");
+
+                int num_repls = this.Send.GetInvocationList().Length;
+                string field_value = tuple.Get(field_index);
+
+                int choosed_repl_index = 0; // TODO HASHING
+
+                try {
+                    SendHandler send_hashing = (SendHandler)Array.Find(this.Send.GetInvocationList(),
+                                               r => ((Replica)(r.Target)).id == choosed_repl_index);
+                    send_hashing(this, (EventArgs)tuple);
+                } catch (Exception) {
+                    routing = "random"; // if hashing fails send tuple to random replica
+                }
+            }
+            if (routing.Contains("random")) {
+                //Console.WriteLine("Routing: random");
+
+                List<SendHandler> handlers = new List<SendHandler>();
+                foreach(Delegate handler in this.Send.GetInvocationList())
+                    handlers.Add((SendHandler)handler);
+                
                 Boolean success = false;
                 int index = -1;
-                while (!success){
-                    try{
+                while (!success) {
+                    try {
                         if (handlers.Count == 0) { return; }
                         index = new Random().Next(0, handlers.Count);
                         SendHandler send = handlers[index];
                         send(this, (EventArgs)tuple);
                         success = true;
                     } catch (Exception) {
+                        Console.WriteLine("Failed to send tuple to replica " + index);
                         if (index == -1) { return; }
                         handlers.RemoveAt(index);
+                        Console.WriteLine("Trying to send to another random replica...");
                     }
                 }
-            }
-            else{
-                // TODO !!!! HASHING 
-                int field = Int32.Parse(routing.Split('(')[1].Split(')')[0]);
-                List<SendHandler> handlers = new List<SendHandler>((SendHandler[])this.Send.GetInvocationList());
-                Boolean success = false;
-                int index = -1;
-                while (!success){      
-                    try{
-                        if(handlers.Count == 0) { return; }
-                        index = new Random().Next(0, handlers.Count);
-                        SendHandler send = handlers[index];
-                        send(this, (EventArgs)tuple);
-                        success = true;
-                    } catch (Exception) {
-                        if (index == -1) { return; }
-                        handlers.RemoveAt(index);
-                    }
-                }
-            }
-            */
+            } 
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
