@@ -22,6 +22,7 @@ namespace DADStorm{
 		public delegate void SendHandler(Replica repl, EventArgs e);
 		private Boolean last_repl = false;
         public int id;
+        private OutputOp output;
 			
 
 		public Replica(string op_id, string repl_url, string pm_url, Boolean last_repl){
@@ -135,13 +136,19 @@ namespace DADStorm{
 			}
 			subscribed = true;
 
-			if (last_repl)
-				this.Send += new SendHandler(this.Output);
-		}
-		public Boolean ready(){
+			if (last_repl) {
+                new Thread(() =>{
+                    output = new OutputOp(op.id, id);
+                    this.Send += new SendHandler(this.Output);
+                }).Start();
+            }
+	    }
+        public void Output(Replica repl, EventArgs e) {
+            new Thread(()=> output.execute((Tuple)e) ).Start();
+        }
+        public Boolean ready(){
 			return subscribed;
 		}
-
 		private void Subscribe(String repl_url){
             new Thread(() => {
                 Boolean success = false;
@@ -152,7 +159,7 @@ namespace DADStorm{
                         BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
                         provider.TypeFilterLevel = TypeFilterLevel.Full;
                         IDictionary props = new Hashtable();
-                        props["name"] = repl_url + url;
+                        props["name"] = repl_url + url + DateTime.Now;
                         TcpServerChannel channel = new TcpServerChannel(props, provider);
                         ChannelServices.RegisterChannel(channel, false);
                         Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
@@ -237,11 +244,6 @@ namespace DADStorm{
             new Thread(() => {
                 queue.Enqueue((Tuple)e);
             }).Start(); 
-		}
-		private void Output(Replica repl, EventArgs e){
-			using (StreamWriter file = new StreamWriter(@op.id+"-output.txt",true)){
-				file.WriteLine((Tuple)e);
-			}
 		}
 
 		private void log(string text){
