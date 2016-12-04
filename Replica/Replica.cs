@@ -21,6 +21,7 @@ namespace DADStorm{
 		private IPM pm;
 		public delegate void SendHandler(Replica repl, EventArgs e);
 		private Boolean last_repl = false;
+        public int id;
 			
 
 		public Replica(string op_id, string repl_url, string pm_url, Boolean last_repl){
@@ -43,7 +44,21 @@ namespace DADStorm{
 
 			ConnectReplicas();
 			ReadInputFiles();
+            this.id = getMyId();
 		}
+
+        private int getMyId(){
+            int i = 0;
+            foreach(string repl_url in op.replicas_url){
+                i++;
+                if (repl_url == this.url) break;
+            }
+            return i;
+        }
+
+        public string routing(){
+            return op.routing;
+        }
 
 		public string toString(){
 			return "[" + op.id + " " + url + "]";
@@ -58,7 +73,7 @@ namespace DADStorm{
                         if (tuples != null) {
                             if (tuples.Count > 0) {
                                 foreach (Tuple t in tuples) {
-                                    this.Send(this, (EventArgs)t);
+                                    this.SendTuple(t);
                                     log("tuple " + url + ", <" + t + ">");
                                 }
                             }
@@ -114,12 +129,9 @@ namespace DADStorm{
 
 		private void ConnectReplicas(){
 			if (subscribed) return;
-			foreach (Operator input in op.input_ops)
-			{
-				//foreach(string repl_url in input.replicas_url)
-				//PRIMARY TODO !!!
-				Subscribe(input.replicas_url[0]);
-
+			foreach (Operator input in op.input_ops){
+				foreach(string repl_url in input.replicas_url)
+				    Subscribe(repl_url);
 			}
 			subscribed = true;
 
@@ -147,17 +159,79 @@ namespace DADStorm{
                         repl.Send += new SendHandler(this.Receive);
                         success = true;
                         Console.WriteLine(repl_url + " subscribed!");
-                    } catch (Exception) {
+                    } catch (Exception e) {
+                        Console.WriteLine(e);
                         Console.WriteLine("Retrying connect to " + repl_url);
                     }
-                    Thread.Sleep(1000);
+                    Thread.Sleep(2000);
                 }
             }).Start();
 		}
 
+        public void SendTuple(Tuple tuple){
+            string routing = ((Replica)(this.Send.Target)).routing();
+            
+            if (routing.Equals("primary")){
+                Console.WriteLine("ROUTING: primary");
+                int repl_id = -1;
+                Boolean success = false;
+                while (!success){
+                    repl_id++;
+                    try {
+                        if (this.Send.GetInvocationList().Length-1 < repl_id) return;
+                        SendHandler send = (SendHandler)Array.Find(this.Send.GetInvocationList(),
+                                                   r => ((Replica)(r.Target)).id == repl_id);
+                        send(this, (EventArgs)tuple);
+                        success = true;
+                    } catch (Exception) { success = false; }
+                }
+            }else {
+                SendHandler send = (SendHandler)Array.Find(this.Send.GetInvocationList(),
+                                                   r => ((Replica)(r.Target)).id == 0);
+                send(this, (EventArgs)tuple);
+                Console.WriteLine("Routing:");
+                Console.WriteLine(routing);
+            }  
+            /*else if (routing.Equals("random")){
+                List<SendHandler> handlers = new List<SendHandler>((SendHandler[])this.Send.GetInvocationList());
+                Boolean success = false;
+                int index = -1;
+                while (!success){
+                    try{
+                        if (handlers.Count == 0) { return; }
+                        index = new Random().Next(0, handlers.Count);
+                        SendHandler send = handlers[index];
+                        send(this, (EventArgs)tuple);
+                        success = true;
+                    } catch (Exception) {
+                        if (index == -1) { return; }
+                        handlers.RemoveAt(index);
+                    }
+                }
+            }
+            else{
+                // TODO !!!! HASHING 
+                int field = Int32.Parse(routing.Split('(')[1].Split(')')[0]);
+                List<SendHandler> handlers = new List<SendHandler>((SendHandler[])this.Send.GetInvocationList());
+                Boolean success = false;
+                int index = -1;
+                while (!success){      
+                    try{
+                        if(handlers.Count == 0) { return; }
+                        index = new Random().Next(0, handlers.Count);
+                        SendHandler send = handlers[index];
+                        send(this, (EventArgs)tuple);
+                        success = true;
+                    } catch (Exception) {
+                        if (index == -1) { return; }
+                        handlers.RemoveAt(index);
+                    }
+                }
+            }
+            */
+        }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
-                Console.WriteLine("tuple received!");
                 queue.Enqueue((Tuple)e);
             }).Start(); 
 		}

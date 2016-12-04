@@ -46,7 +46,7 @@ namespace DADStorm
                                ClassObj,
                                methodArgs);
                         IList<IList<string>> result = (IList<IList<string>>)resultObject;
-                        Console.WriteLine("Custom operator result was: ");
+                        //Console.WriteLine("Custom operator result was: ");
                         foreach (IList<string> tuple in result) 
                             output.Add(new Tuple(tuple));
                         
