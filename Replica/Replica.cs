@@ -8,6 +8,8 @@ using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Serialization.Formatters;
 using System.Threading;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DADStorm{
 	public class Replica : MarshalByRefObject, IReplica {
@@ -190,24 +192,38 @@ namespace DADStorm{
                     }
                 }
             }
-            if (routing.Contains("hashing")) {
+            else if (routing.Contains("hashing")) {
                 int field_index = Int32.Parse(routing.Split('(')[1].Split(')')[0]);
                 //Console.WriteLine("Routing: hashing(" + field + ")");
 
-                int num_repls = this.Send.GetInvocationList().Length;
                 string field_value = tuple.Get(field_index);
+                MD5 md5Hasher = MD5.Create();
+                byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
+                int hash = BitConverter.ToInt32(hashed, 0);
 
-                int choosed_repl_index = 0; // TODO HASHING
+                List<SendHandler> handlers = new List<SendHandler>();
+                foreach (Delegate handler in this.Send.GetInvocationList())
+                    handlers.Add((SendHandler)handler);
 
-                try {
-                    SendHandler send_hashing = (SendHandler)Array.Find(this.Send.GetInvocationList(),
-                                               r => ((Replica)(r.Target)).id == choosed_repl_index);
-                    send_hashing(this, (EventArgs)tuple);
-                } catch (Exception) {
-                    routing = "random"; // if hashing fails send tuple to random replica
+                Boolean success = false;
+                int index = -1;
+                while (!success) {
+                    try {
+                        if (handlers.Count == 0) { return; }
+                        index = hash % handlers.Count;
+                        SendHandler send = handlers[index];
+                        send(this, (EventArgs)tuple);
+                        success = true;
+                    }
+                    catch (Exception) {
+                        if (index == -1) { return; }
+                        Console.WriteLine("Failed to send tuple to replica " + index);  
+                        handlers.RemoveAt(index);
+                        Console.WriteLine("Trying to send to another random replica...");
+                    }
                 }
             }
-            if (routing.Contains("random")) {
+            else if (routing.Contains("random")) {
                 //Console.WriteLine("Routing: random");
 
                 List<SendHandler> handlers = new List<SendHandler>();
@@ -234,7 +250,6 @@ namespace DADStorm{
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
-                Console.WriteLine("tuple received!");
                 input_queue.Enqueue((Tuple)e);
             }).Start(); 
 		}
