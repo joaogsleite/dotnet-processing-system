@@ -42,7 +42,6 @@
     <Compile Include="Interfaces\IPCS.cs" />
     <Compile Include="Interfaces\IReplica.cs" />
     <Compile Include="Interfaces\IPM.cs" />
-    <Compile Include="Operators\OutputOp.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

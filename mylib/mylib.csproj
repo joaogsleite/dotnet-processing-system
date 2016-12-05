@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IdentityOperator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryFollowersFile.cs" />
   </ItemGroup>

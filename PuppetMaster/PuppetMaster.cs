@@ -124,7 +124,7 @@ namespace DADStorm {
 					ChannelServices.RegisterChannel(channel, false);
 					pcs.Add(pcs_url, (IPCS)Activator.GetObject(typeof(IPCS), pcs_url));
 				}
-				pcs[pcs_url].createReplica(op.id,replica_url,last_repl);
+				pcs[pcs_url].createReplica(op.id,replica_url);
 				Monitor.Exit(pcs);
 			}
 			catch (RemotingException e){

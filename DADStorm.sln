@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibDADStorm", "LibDADStorm\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Replica", "Replica\Replica.csproj", "{AB2774C7-326C-4A32-9002-CAAEA8D90D50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mylib", "mylib\mylib.csproj", "{BAE271D2-18E9-425A-A639-DC15AC52325A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibCustomOperator", "..\..\..\Downloads\CustomOperatorforDemos\OperatorTransfer\LibOperator\LibCustomOperator.csproj", "{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,14 +47,14 @@ Global
 		{AB2774C7-326C-4A32-9002-CAAEA8D90D50}.Release|Any CPU.ActiveCfg = Release|x86
 		{AB2774C7-326C-4A32-9002-CAAEA8D90D50}.Release|x86.ActiveCfg = Release|x86
 		{AB2774C7-326C-4A32-9002-CAAEA8D90D50}.Release|x86.Build.0 = Release|x86
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Debug|x86.Build.0 = Debug|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Release|x86.ActiveCfg = Release|Any CPU
-		{BAE271D2-18E9-425A-A639-DC15AC52325A}.Release|x86.Build.0 = Release|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Debug|x86.Build.0 = Debug|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Release|x86.ActiveCfg = Release|Any CPU
+		{E70FBDBF-80B2-44D5-8E93-7C14D5D6D1BA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
