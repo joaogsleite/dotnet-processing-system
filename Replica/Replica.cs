@@ -18,6 +18,7 @@ namespace DADStorm{
 		private string url;
 		private Queue<Tuple> input_queue = new Queue<Tuple>();
         private Queue<Tuple> output_queue = new Queue<Tuple>();
+        private Dictionary<string,Tuple> sent_tuples = new Dictionary<string, Tuple>();
         private Dictionary<string,Dictionary<int,Tuple>> input_not_processed = new Dictionary<string, Dictionary<int, Tuple>>();
         private Boolean processing = false;
 		private Boolean subscribed = false;
@@ -28,12 +29,13 @@ namespace DADStorm{
         public int id;
         private List<TcpChannel> channels = new List<TcpChannel>();
         private Boolean readfiles = false;
-        private Boolean checking_input_not_processed = false;
+        private Boolean checking_tuples_not_processed = false;
 
-        public void check_input_not_processed() {
-            if (checking_input_not_processed) return;
+        public void check_tuples_not_processed() {
+            if (checking_tuples_not_processed) return;
+            checking_tuples_not_processed = true;
+
             new Thread(() => {
-                checking_input_not_processed = true;
                 foreach (Dictionary<int, Tuple> file in input_not_processed.Values) {
                     foreach (KeyValuePair<int, Tuple> entry in file) {
                         if (DateTime.Compare(entry.Value.date, DateTime.Now.AddSeconds(-30)) < 0) {
@@ -43,6 +45,15 @@ namespace DADStorm{
                         }
                     }
                 }
+            }).Start();
+            new Thread(() => {
+                foreach (KeyValuePair<string, Tuple> entry in sent_tuples) {
+                    if (DateTime.Compare(entry.Value.date, DateTime.Now.AddSeconds(-30)) < 0) {
+                        Console.WriteLine(entry.Value + " not processed! Adding to queue...");
+                        output_queue.Enqueue(entry.Value);
+                        sent_tuples.Remove(entry.Key);
+                    }
+                }     
             }).Start();
         }
 
@@ -97,14 +108,16 @@ namespace DADStorm{
                 });
         }
         public void ack(Tuple t) {
-            if(t.origin == this && t.filename!=null)
+            if (t.origin == this && t.filename != null)
                 input_not_processed[t.filename].Remove(t.line);
+            else
+                sent_tuples.Remove(t.id);
             Console.WriteLine("ACK: " + t.id);
         }
 
         public void Start() {
             ReadInputFiles();
-            check_input_not_processed();
+            check_tuples_not_processed();
 
             processing = true;
             new Thread(() => {   
@@ -372,7 +385,8 @@ namespace DADStorm{
                         Console.WriteLine("Trying to send to another random replica...");
                     }
                 }
-            } 
+            }
+            sent_tuples.Add(tuple.id, tuple);
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
