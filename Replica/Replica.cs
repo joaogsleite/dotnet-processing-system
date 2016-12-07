@@ -39,16 +39,17 @@ namespace DADStorm{
             channels.Add(channel);
 			ChannelServices.RegisterChannel(channel, false);
 			pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
+            
+            this.op = pm.get_operator_by_id(op_id);
+            this.id = getMyId();
 
-			this.op = pm.get_operator_by_id(op_id);
-
-			string start_text = "[" + op_id + " " + url + "] created!";
+            string start_text = "[" + op_id + " " + id + "] created!";
 			Console.WriteLine(start_text);
 			pm.log(start_text);
 
 			ConnectReplicas();
 			ReadInputFiles();
-            this.id = getMyId();
+            
 		}
 
         private int getMyId(){
@@ -140,14 +141,31 @@ namespace DADStorm{
 		private void ReadInputFiles(){
 			foreach(string path in op.input_files){
 				string[] lines = System.IO.File.ReadAllLines(@path);
-				foreach (string line in lines)
-                    if (!line.Contains("%")) {
-                        Console.WriteLine("Reading line from " + @path + "...");
-                        Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
-                        t.origin = this;
-                        input_queue.Enqueue(t);
+                foreach (string line in lines) {
+                    if (line.Contains("%")) continue;
+                    string[] l = line.Split(new string[] { ", " }, StringSplitOptions.None);
+
+                    if (routing().Contains("hashing")) {
+                        int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
+                        //Console.WriteLine("Routing: hashing(" + field + ")");
+
+                        string field_value = l[field_index-1];
+                        MD5 md5Hasher = MD5.Create();
+                        byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
+                        int hash = BitConverter.ToInt32(hashed, 0);
+
+                        int index = hash % op.replicas_url.Count;
+                        if (index != id) continue;
                     }
-						
+                    else if (routing().Contains("primary")) {
+                        if (id != 0) continue;
+                    }
+
+                    Console.WriteLine("Reading from file " + @path + ": "+line);
+                    Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
+                    t.origin = this;
+                    input_queue.Enqueue(t);
+                }
 			}
 		}
 
