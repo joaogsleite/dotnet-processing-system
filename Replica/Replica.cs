@@ -17,6 +17,7 @@ namespace DADStorm{
 		private Operator op;
 		private string url;
 		private Queue<Tuple> input_queue = new Queue<Tuple>();
+        private List<Tuple> intput_file_ack = new List<Tuple>();
         private Queue<Tuple> output_queue = new Queue<Tuple>();
         private Boolean processing = false;
 		private Boolean subscribed = false;
@@ -137,32 +138,35 @@ namespace DADStorm{
 		public void Interval(int time){
 			Thread.Sleep(time);
 		}
-
 		private void ReadInputFiles(){
 			foreach(string path in op.input_files){
 				string[] lines = System.IO.File.ReadAllLines(@path);
+
                 foreach (string line in lines) {
                     if (line.Contains("%")) continue;
-                    string[] l = line.Split(new string[] { ", " }, StringSplitOptions.None);
+                    Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
 
                     if (routing().Contains("hashing")) {
                         int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
                         //Console.WriteLine("Routing: hashing(" + field + ")");
 
-                        string field_value = l[field_index-1];
+                        string field_value = t.Get(field_index);
                         MD5 md5Hasher = MD5.Create();
                         byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
                         int hash = BitConverter.ToInt32(hashed, 0);
 
                         int index = hash % op.replicas_url.Count;
-                        if (index != id) continue;
+                        if (index != id) {
+                            continue;
+                        }
                     }
                     else if (routing().Contains("primary")) {
-                        if (id != 0) continue;
+                        if (id != 0) {
+                            continue;
+                        }
                     }
 
                     Console.WriteLine("Reading from file " + @path + ": "+line);
-                    Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
                     t.origin = this;
                     input_queue.Enqueue(t);
                 }
