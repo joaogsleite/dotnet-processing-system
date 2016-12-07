@@ -43,11 +43,12 @@ namespace DADStorm{
                     foreach (string path in paths) {
                         int[] lines = input_not_processed[path].Keys.ToArray();
                         foreach (int line in lines) {
-                            if (DateTime.Compare(input_not_processed[path][line].date, DateTime.Now.AddSeconds(-20)) < 0) {
-                                Console.WriteLine(input_not_processed[path][line].date + " not processed! Adding to queue...");
-                                Tuple t = input_not_processed[path][line];
+                            if (input_not_processed[path][line] == null) continue;
+                            if (DateTime.Compare(input_not_processed[path][line].date, DateTime.Now.AddSeconds(-10)) < 0) {
+                                Console.WriteLine(input_not_processed[path][line] + " read not processed! Adding to queue...");
+                                input_not_processed[path][line].init();
                                 input_queue.Enqueue(input_not_processed[path][line]);
-                                input_not_processed[path].Remove(line);
+                                //input_not_processed[path].Remove(line);
                             }
                         }
                     }
@@ -60,10 +61,13 @@ namespace DADStorm{
                     Monitor.Enter(sent_tuples);
                     string[] ids = sent_tuples.Keys.ToArray();
                     foreach (string id in ids) {
-                        if (DateTime.Compare(sent_tuples[id].date, DateTime.Now.AddSeconds(-20)) < 0) {
-                            Console.WriteLine(sent_tuples[id] + " not processed! Adding to queue...");
-                            output_queue.Enqueue(sent_tuples[id]);
+                        if (sent_tuples[id] == null) continue;
+                        if (DateTime.Compare(sent_tuples[id].date, DateTime.Now.AddSeconds(-30)) < 0) {
+                            Console.WriteLine(sent_tuples[id] + " sent not processed! Adding to queue...");
+                            Tuple t = sent_tuples[id];
+                            t.date = DateTime.Now;
                             sent_tuples.Remove(id);
+                            output_queue.Enqueue(t);  
                         }
                     }
                     Monitor.Exit(sent_tuples);
@@ -125,10 +129,10 @@ namespace DADStorm{
         public void ack(Tuple t) {
             if (t.filename != null) {
                 Monitor.Enter(input_not_processed);
-                input_not_processed[t.filename].Remove(t.line);
+                input_not_processed[t.filename][t.line]=null;
                 Monitor.Exit(input_not_processed);
             }
-            else {
+            if(t.sent){
                 Monitor.Enter(sent_tuples);
                 sent_tuples.Remove(t.id);
                 Monitor.Exit(sent_tuples);
@@ -332,7 +336,7 @@ namespace DADStorm{
 
         public void SendTuple(Tuple tuple){
             string routing = ((Replica)(this.Send.Target)).routing();
-
+            tuple.sent = true;
             if (routing.Contains("primary")) {
                 //Console.WriteLine("Routing: primary");
                 int repl_id = -1;
@@ -408,9 +412,7 @@ namespace DADStorm{
                     }
                 }
             }
-            Monitor.Enter(sent_tuples);
-            sent_tuples.Add(tuple.id, tuple);
-            Monitor.Exit(sent_tuples);
+            sent_tuples[tuple.id]=tuple;
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {

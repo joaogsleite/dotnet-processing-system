@@ -12,6 +12,7 @@ namespace DADStorm{
         public DateTime date;
         public string id;
         public IReplica origin;
+        public Boolean sent = false;
 
         public string filename;
         public int line;

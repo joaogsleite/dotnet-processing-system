@@ -128,10 +128,14 @@ namespace DADStorm {
             logs.AppendText("\r\n" + text);
         }
         public void log(string text) {
-            if (logs.InvokeRequired) {
-                UpdateLog update = update_log;
-                this.Invoke(update, text);
-            } else update_log(text);
+            try {
+                if (logs.InvokeRequired) {
+                    UpdateLog update = update_log;
+                    this.Invoke(update, text);
+                }
+                else update_log(text);
+            }
+            catch (Exception) { }
         }
     }
 }
