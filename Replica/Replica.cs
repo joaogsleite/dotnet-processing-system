@@ -17,7 +17,6 @@ namespace DADStorm{
 		private Operator op;
 		private string url;
 		private Queue<Tuple> input_queue = new Queue<Tuple>();
-        private List<Tuple> intput_file_ack = new List<Tuple>();
         private Queue<Tuple> output_queue = new Queue<Tuple>();
         private Boolean processing = false;
 		private Boolean subscribed = false;
@@ -27,9 +26,11 @@ namespace DADStorm{
 		public delegate void SendHandler(Replica repl, EventArgs e);
         public int id;
         private List<TcpChannel> channels = new List<TcpChannel>();
-			
+        private int faulty_replicas = 0;
+        private Boolean readfiles = false;
 
-		public Replica(string op_id, string repl_url, string pm_url){
+
+        public Replica(string op_id, string repl_url, string pm_url){
 			this.url = repl_url;
 
 			BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
@@ -49,8 +50,6 @@ namespace DADStorm{
 			pm.log(start_text);
 
 			ConnectReplicas();
-			ReadInputFiles();
-            
 		}
 
         private int getMyId(){
@@ -86,6 +85,7 @@ namespace DADStorm{
         }
 
         public void Start() {
+            ReadInputFiles();
             processing = true;
             new Thread(() => {   
                 while (processing) {
@@ -138,39 +138,57 @@ namespace DADStorm{
 		public void Interval(int time){
 			Thread.Sleep(time);
 		}
-		private void ReadInputFiles(){
-			foreach(string path in op.input_files){
-				string[] lines = System.IO.File.ReadAllLines(@path);
-
-                foreach (string line in lines) {
-                    if (line.Contains("%")) continue;
-                    Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
-
-                    if (routing().Contains("hashing")) {
-                        int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
-                        //Console.WriteLine("Routing: hashing(" + field + ")");
-
-                        string field_value = t.Get(field_index);
-                        MD5 md5Hasher = MD5.Create();
-                        byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
-                        int hash = BitConverter.ToInt32(hashed, 0);
-
-                        int index = hash % op.replicas_url.Count;
-                        if (index != id) {
-                            continue;
-                        }
-                    }
-                    else if (routing().Contains("primary")) {
-                        if (id != 0) {
-                            continue;
-                        }
-                    }
-
-                    Console.WriteLine("Reading from file " + @path + ": "+line);
-                    t.origin = this;
-                    input_queue.Enqueue(t);
+        private int FaultyReplicas() {
+            int faulty = 0;
+            foreach (Replica repl in sisters) {
+                try {
+                    repl.alive();
+                } catch (Exception) {
+                    Console.WriteLine("Faulty!!!");
+                    faulty++;
                 }
-			}
+            }
+            return faulty;
+        }
+        public Boolean alive() {
+            return true;
+        }
+		private void ReadInputFiles(){
+            if (readfiles) return;
+            new Thread(() => {
+                readfiles = true;
+                foreach (string path in op.input_files) {
+                    string[] lines = System.IO.File.ReadAllLines(@path);
+
+                    foreach (string line in lines) {
+                        if (line.Contains("%")) continue;
+                        Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
+                        if (routing().Contains("hashing")) {
+                            int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
+                            //Console.WriteLine("Routing: hashing(" + field + ")");
+
+                            string field_value = t.Get(field_index);
+                            MD5 md5Hasher = MD5.Create();
+                            byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
+                            int hash = BitConverter.ToInt32(hashed, 0);
+
+                            int index = hash % op.replicas_url.Count - FaultyReplicas();
+                            if (index != id) {
+                                continue;
+                            }
+                        }
+                        else if (routing().Contains("primary")) {
+                            if (id != 0) {
+                                continue;
+                            }
+                        }
+
+                        Console.WriteLine("Reading from file " + @path + ": " + line);
+                        t.origin = this;
+                        input_queue.Enqueue(t);
+                    }
+                }
+            }).Start();
 		}
 
         private void CloseTcpChannels() {

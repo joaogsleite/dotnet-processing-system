@@ -13,5 +13,6 @@ namespace DADStorm{
         void Exit();
 		void Interval(int time);
         void ack(string id);
+        Boolean alive();
 	}
 }
