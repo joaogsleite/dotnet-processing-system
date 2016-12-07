@@ -10,6 +10,7 @@ using System.Threading;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using System.Linq;
 
 namespace DADStorm{
 	public class Replica : MarshalByRefObject, IReplica {
@@ -36,24 +37,38 @@ namespace DADStorm{
             checking_tuples_not_processed = true;
 
             new Thread(() => {
-                foreach (Dictionary<int, Tuple> file in input_not_processed.Values) {
-                    foreach (KeyValuePair<int, Tuple> entry in file) {
-                        if (DateTime.Compare(entry.Value.date, DateTime.Now.AddSeconds(-30)) < 0) {
-                            Console.WriteLine(entry.Value + " not processed! Adding to queue...");
-                            input_queue.Enqueue(entry.Value);
-                            file.Remove(entry.Key);
+                while (true) {
+                    Monitor.Enter(input_not_processed);
+                    string[] paths = input_not_processed.Keys.ToArray();
+                    foreach (string path in paths) {
+                        int[] lines = input_not_processed[path].Keys.ToArray();
+                        foreach (int line in lines) {
+                            if (DateTime.Compare(input_not_processed[path][line].date, DateTime.Now.AddSeconds(-20)) < 0) {
+                                Console.WriteLine(input_not_processed[path][line].date + " not processed! Adding to queue...");
+                                Tuple t = input_not_processed[path][line];
+                                input_queue.Enqueue(input_not_processed[path][line]);
+                                input_not_processed[path].Remove(line);
+                            }
                         }
                     }
+                    Monitor.Exit(input_not_processed);
+                    Thread.Sleep(2000);
                 }
             }).Start();
             new Thread(() => {
-                foreach (KeyValuePair<string, Tuple> entry in sent_tuples) {
-                    if (DateTime.Compare(entry.Value.date, DateTime.Now.AddSeconds(-30)) < 0) {
-                        Console.WriteLine(entry.Value + " not processed! Adding to queue...");
-                        output_queue.Enqueue(entry.Value);
-                        sent_tuples.Remove(entry.Key);
+                while (true) {
+                    Monitor.Enter(sent_tuples);
+                    string[] ids = sent_tuples.Keys.ToArray();
+                    foreach (string id in ids) {
+                        if (DateTime.Compare(sent_tuples[id].date, DateTime.Now.AddSeconds(-20)) < 0) {
+                            Console.WriteLine(sent_tuples[id] + " not processed! Adding to queue...");
+                            output_queue.Enqueue(sent_tuples[id]);
+                            sent_tuples.Remove(id);
+                        }
                     }
-                }     
+                    Monitor.Exit(sent_tuples);
+                    Thread.Sleep(2000);
+                }
             }).Start();
         }
 
@@ -108,10 +123,16 @@ namespace DADStorm{
                 });
         }
         public void ack(Tuple t) {
-            if (t.origin == this && t.filename != null)
+            if (t.filename != null) {
+                Monitor.Enter(input_not_processed);
                 input_not_processed[t.filename].Remove(t.line);
-            else
+                Monitor.Exit(input_not_processed);
+            }
+            else {
+                Monitor.Enter(sent_tuples);
                 sent_tuples.Remove(t.id);
+                Monitor.Exit(sent_tuples);
+            }
             Console.WriteLine("ACK: " + t.id);
         }
 
@@ -152,6 +173,7 @@ namespace DADStorm{
 
 		public void Crash(){
             //Environment.Exit(1);
+            Console.WriteLine("CRASH");
             Process.GetCurrentProcess().Kill();
 		}
         public void Exit(){
@@ -200,6 +222,8 @@ namespace DADStorm{
                         Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
                         t.line = line_number;
                         t.filename = path;
+                        t.origin = this;
+                        input_not_processed[path].Add(line_number, t);
                         if (routing().Contains("hashing")) {
                             int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
                             //Console.WriteLine("Routing: hashing(" + field + ")");
@@ -210,16 +234,14 @@ namespace DADStorm{
                             int hash = BitConverter.ToInt32(hashed, 0);
 
                             int index = hash % op.replicas_url.Count - FaultyReplicas();
-                            if (index != id) { 
-                                input_not_processed[path].Add(line_number, t);
+                            if (index != id)  
                                 continue;
-                            }
+                            
                         }
                         else if (routing().Contains("primary")) {
-                            if (id != 0) {
-                                input_not_processed[path].Add(line_number, t);
+                            if (id != 0)  
                                 continue;
-                            }
+                            
                         }
 
                         Console.WriteLine("Reading from file " + @path + ": " + line);
@@ -386,7 +408,9 @@ namespace DADStorm{
                     }
                 }
             }
+            Monitor.Enter(sent_tuples);
             sent_tuples.Add(tuple.id, tuple);
+            Monitor.Exit(sent_tuples);
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {

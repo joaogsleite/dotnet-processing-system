@@ -157,7 +157,8 @@ namespace DADStorm {
                         StartOp(cmd.Split(' ')[1]);
                     if (cmd.Contains("Interval"))
                         Interval(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
-                    
+                    if (cmd.Contains("Crash"))
+                        Crash(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
                     if (cmd.Contains("Freeze"))
                         Freeze(cmd.Split(' ')[1], Int32.Parse(cmd.Split(' ')[2]));
                     if (cmd.Contains("Unfreeze"))
