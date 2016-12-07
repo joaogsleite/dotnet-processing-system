@@ -68,15 +68,28 @@ namespace DADStorm{
 			return "[" + op.id + " " + url + "]";
 		}
 
+        private void ProcessTuple(Tuple tuple) {     
+            List<Tuple> tuples = op.execute(tuple);
+            tuple.origin.ack(tuple.id);
+            if (tuples != null)
+                tuples.ForEach((t) => {
+                    if (t != null) {
+                        t.origin = this;
+                        output_queue.Enqueue(t);
+                    }
+                });
+        }
+        public void ack(string id) {
+            Console.WriteLine("ACK: " + id);
+        }
+
         public void Start() {
             processing = true;
             new Thread(() => {   
                 while (processing) {
-                    if (input_queue.Count > 0) {
-                        List<Tuple> tuples = op.execute(input_queue.Dequeue());
-                        if(tuples!=null)
-                            tuples.ForEach(t => output_queue.Enqueue(t));        
-                    }
+                    if (input_queue.Count > 0) 
+                        ProcessTuple(input_queue.Dequeue());
+
                     Thread.Sleep(500);
                 }         
             }).Start();
@@ -130,7 +143,9 @@ namespace DADStorm{
 				foreach (string line in lines)
                     if (!line.Contains("%")) {
                         Console.WriteLine("Reading line from " + @path + "...");
-                        input_queue.Enqueue(new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None)));
+                        Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
+                        t.origin = this;
+                        input_queue.Enqueue(t);
                     }
 						
 			}
