@@ -18,6 +18,7 @@ namespace DADStorm{
 		private string url;
 		private Queue<Tuple> input_queue = new Queue<Tuple>();
         private Queue<Tuple> output_queue = new Queue<Tuple>();
+        private Dictionary<string,Dictionary<int,Tuple>> input_not_processed = new Dictionary<string, Dictionary<int, Tuple>>();
         private Boolean processing = false;
 		private Boolean subscribed = false;
 		public event SendHandler Send;
@@ -26,9 +27,24 @@ namespace DADStorm{
 		public delegate void SendHandler(Replica repl, EventArgs e);
         public int id;
         private List<TcpChannel> channels = new List<TcpChannel>();
-        private int faulty_replicas = 0;
         private Boolean readfiles = false;
+        private Boolean checking_input_not_processed = false;
 
+        public void check_input_not_processed() {
+            if (checking_input_not_processed) return;
+            new Thread(() => {
+                checking_input_not_processed = true;
+                foreach (Dictionary<int, Tuple> file in input_not_processed.Values) {
+                    foreach (KeyValuePair<int, Tuple> entry in file) {
+                        if (DateTime.Compare(entry.Value.date, DateTime.Now.AddSeconds(-30)) < 0) {
+                            Console.WriteLine(entry.Value + " not processed! Adding to queue...");
+                            input_queue.Enqueue(entry.Value);
+                            file.Remove(entry.Key);
+                        }
+                    }
+                }
+            }).Start();
+        }
 
         public Replica(string op_id, string repl_url, string pm_url){
 			this.url = repl_url;
@@ -71,7 +87,7 @@ namespace DADStorm{
 
         private void ProcessTuple(Tuple tuple) {     
             List<Tuple> tuples = op.execute(tuple);
-            tuple.origin.ack(tuple.id);
+            tuple.origin.ack(tuple);
             if (tuples != null)
                 tuples.ForEach((t) => {
                     if (t != null) {
@@ -80,12 +96,16 @@ namespace DADStorm{
                     }
                 });
         }
-        public void ack(string id) {
-            Console.WriteLine("ACK: " + id);
+        public void ack(Tuple t) {
+            if(t.origin == this && t.filename!=null)
+                input_not_processed[t.filename].Remove(t.line);
+            Console.WriteLine("ACK: " + t.id);
         }
 
         public void Start() {
             ReadInputFiles();
+            check_input_not_processed();
+
             processing = true;
             new Thread(() => {   
                 while (processing) {
@@ -158,11 +178,15 @@ namespace DADStorm{
             new Thread(() => {
                 readfiles = true;
                 foreach (string path in op.input_files) {
+                    input_not_processed.Add(path, new Dictionary<int, Tuple>());
                     string[] lines = System.IO.File.ReadAllLines(@path);
-
+                    int line_number = 0;
                     foreach (string line in lines) {
                         if (line.Contains("%")) continue;
+                        line_number++;
                         Tuple t = new Tuple(line.Split(new string[] { ", " }, StringSplitOptions.None));
+                        t.line = line_number;
+                        t.filename = path;
                         if (routing().Contains("hashing")) {
                             int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
                             //Console.WriteLine("Routing: hashing(" + field + ")");
@@ -173,12 +197,14 @@ namespace DADStorm{
                             int hash = BitConverter.ToInt32(hashed, 0);
 
                             int index = hash % op.replicas_url.Count - FaultyReplicas();
-                            if (index != id) {
+                            if (index != id) { 
+                                input_not_processed[path].Add(line_number, t);
                                 continue;
                             }
                         }
                         else if (routing().Contains("primary")) {
                             if (id != 0) {
+                                input_not_processed[path].Add(line_number, t);
                                 continue;
                             }
                         }

@@ -12,7 +12,7 @@ namespace DADStorm{
 		void Start();
         void Exit();
 		void Interval(int time);
-        void ack(string id);
+        void ack(Tuple t);
         Boolean alive();
 	}
 }

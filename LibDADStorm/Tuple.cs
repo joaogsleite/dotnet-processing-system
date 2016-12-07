@@ -13,6 +13,9 @@ namespace DADStorm{
         public string id;
         public IReplica origin;
 
+        public string filename;
+        public int line;
+
         public void init() {
             this.id = GenerateIdentifier();
             this.date = DateTime.Now;
