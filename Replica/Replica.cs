@@ -22,6 +22,7 @@ namespace DADStorm{
 		private Boolean subscribed = false;
 		public event SendHandler Send;
 		private IPM pm;
+        private List<Replica> sisters = new List<Replica>();
 		public delegate void SendHandler(Replica repl, EventArgs e);
         public int id;
 			
@@ -33,7 +34,7 @@ namespace DADStorm{
 			provider.TypeFilterLevel = TypeFilterLevel.Full;
 			IDictionary props = new Hashtable();
 			props["name"] = "tcp_pm";
-			TcpServerChannel channel = new TcpServerChannel(props,provider);
+			TcpChannel channel = new TcpChannel(props, null, provider);
 			ChannelServices.RegisterChannel(channel, false);
 			pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
 
@@ -139,6 +140,10 @@ namespace DADStorm{
 				    Subscribe(repl_url);
 			}
 			subscribed = true;
+            foreach(string repl_url in op.replicas_url) {
+                if (repl_url != url)
+                    ConnectToReplica(repl_url);
+            }
 	    }
         public Boolean ready(){
 			return subscribed;
@@ -154,7 +159,7 @@ namespace DADStorm{
                         provider.TypeFilterLevel = TypeFilterLevel.Full;
                         IDictionary props = new Hashtable();
                         props["name"] = repl_url + url + DateTime.Now;
-                        TcpServerChannel channel = new TcpServerChannel(props, provider);
+                        TcpChannel channel = new TcpChannel(props, null, provider);
                         ChannelServices.RegisterChannel(channel, false);
                         Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
                         repl.Send += new SendHandler(this.Receive);
@@ -162,12 +167,38 @@ namespace DADStorm{
                         Console.WriteLine(repl_url + " subscribed!");
                     } catch (Exception e) {
                         Console.WriteLine(e);
-                        Console.WriteLine("Retrying connect to " + repl_url);
+                        Console.WriteLine("Retrying subscribe to " + repl_url);
                     }
                     Thread.Sleep(2000);
                 }
             }).Start();
 		}
+        private void ConnectToReplica(String repl_url) {
+            new Thread(() => {
+                Boolean success = false;
+                while (!success) {
+                    try {
+                        //TcpChannel channel = new TcpChannel();
+                        //ChannelServices.RegisterChannel(channel, false);
+                        BinaryServerFormatterSinkProvider provider = new BinaryServerFormatterSinkProvider();
+                        provider.TypeFilterLevel = TypeFilterLevel.Full;
+                        IDictionary props = new Hashtable();
+                        props["name"] = repl_url + url + DateTime.Now;
+                        TcpChannel channel = new TcpChannel(props, null, provider);
+                        ChannelServices.RegisterChannel(channel, false);
+                        Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
+                        sisters.Add(repl);
+                        success = true;
+                        Console.WriteLine(repl_url + " connected!");
+                    }
+                    catch (Exception e) {
+                        Console.WriteLine(e);
+                        Console.WriteLine("Retrying connect to " + repl_url);
+                    }
+                    Thread.Sleep(2000);
+                }
+            }).Start();
+        }
 
         public void SendTuple(Tuple tuple){
             string routing = ((Replica)(this.Send.Target)).routing();

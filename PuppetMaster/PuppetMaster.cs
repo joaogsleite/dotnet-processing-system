@@ -39,7 +39,7 @@ namespace DADStorm {
                 IDictionary props = new Hashtable();
                 props["port"] = 10001;
                 props["name"] = "tcp10001";
-                TcpServerChannel channel = new TcpServerChannel(props, provider);
+                TcpChannel channel = new TcpChannel(props, null, provider);
                 ChannelServices.RegisterChannel(channel, false);
                 RemotingServices.Marshal(pm, "pm", typeof(IPM));
             }).Start();
@@ -120,7 +120,7 @@ namespace DADStorm {
 					provider.TypeFilterLevel = TypeFilterLevel.Full;
 					IDictionary props = new Hashtable();
 					props["name"] = replica_url;
-					TcpServerChannel channel = new TcpServerChannel(props,provider);
+					TcpChannel channel = new TcpChannel(props, null, provider);
 					ChannelServices.RegisterChannel(channel, false);
 					pcs.Add(pcs_url, (IPCS)Activator.GetObject(typeof(IPCS), pcs_url));
 				}
