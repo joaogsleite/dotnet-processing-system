@@ -25,6 +25,7 @@ namespace DADStorm{
         private List<Replica> sisters = new List<Replica>();
 		public delegate void SendHandler(Replica repl, EventArgs e);
         public int id;
+        private List<TcpChannel> channels = new List<TcpChannel>();
 			
 
 		public Replica(string op_id, string repl_url, string pm_url){
@@ -35,6 +36,7 @@ namespace DADStorm{
 			IDictionary props = new Hashtable();
 			props["name"] = "tcp_pm";
 			TcpChannel channel = new TcpChannel(props, null, provider);
+            channels.Add(channel);
 			ChannelServices.RegisterChannel(channel, false);
 			pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
 
@@ -105,6 +107,7 @@ namespace DADStorm{
             Process.GetCurrentProcess().Kill();
 		}
         public void Exit(){
+            CloseTcpChannels();
             Environment.Exit(0);
             Process.GetCurrentProcess().Kill();
         }
@@ -133,6 +136,15 @@ namespace DADStorm{
 			}
 		}
 
+        private void CloseTcpChannels() {
+            foreach(TcpChannel channel in channels) {
+                channel.StopListening(null);
+                RemotingServices.Disconnect(this);
+                ChannelServices.UnregisterChannel(channel);
+            }
+            channels = null;
+        }
+
 		private void ConnectReplicas(){
 			if (subscribed) return;
 			foreach (Operator input in op.input_ops){
@@ -160,6 +172,7 @@ namespace DADStorm{
                         IDictionary props = new Hashtable();
                         props["name"] = repl_url + url + DateTime.Now;
                         TcpChannel channel = new TcpChannel(props, null, provider);
+                        //channels.Add(channel);
                         ChannelServices.RegisterChannel(channel, false);
                         Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
                         repl.Send += new SendHandler(this.Receive);
@@ -185,6 +198,7 @@ namespace DADStorm{
                         IDictionary props = new Hashtable();
                         props["name"] = repl_url + url + DateTime.Now;
                         TcpChannel channel = new TcpChannel(props, null, provider);
+                        //channels.Add(channel);
                         ChannelServices.RegisterChannel(channel, false);
                         Replica repl = (Replica)Activator.GetObject(typeof(Replica), repl_url);
                         sisters.Add(repl);
@@ -308,14 +322,21 @@ namespace DADStorm{
 			props["port"] = port;
 			props["name"] = "tcp" + port;
 
-			TcpServerChannel channel = new TcpServerChannel(props,provider);
+			TcpChannel channel = new TcpChannel(props,null, provider);
 			ChannelServices.RegisterChannel(channel, false);
 
 			Replica replica = new Replica(op_id,repl_url,pm_url);
+            replica.channels.Add(channel);
 			RemotingServices.Marshal(replica, uri, typeof(Replica));
 
 			// Dont close console
 			Console.ReadLine();
-		}
+
+            // Close TcpChannel
+            channel.StopListening(null);
+            RemotingServices.Disconnect(replica);
+            ChannelServices.UnregisterChannel(channel);
+            channel = null;
+        }
 	}
 }

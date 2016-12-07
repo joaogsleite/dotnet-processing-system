@@ -56,6 +56,12 @@ namespace DADStorm {
 
 			// Dont close console
 			Console.ReadLine();
-		}
+
+            // Close TcpChannel
+            channel.StopListening(null);
+            RemotingServices.Disconnect(pcs);
+            ChannelServices.UnregisterChannel(channel);
+            channel = null;
+        }
 	}
 }
