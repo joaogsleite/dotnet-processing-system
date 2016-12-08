@@ -67,6 +67,7 @@ namespace DADStorm {
 				operators.Add(op.id,op);
 				foreach (string replica_url in op.replicas_url){
 					Console.WriteLine(replica_url);
+                    op.last = last_op;
 					CreateReplicaInThread(op, replica_url, last_op);
 					replicas_url.Add(replica_url);
 				}	
@@ -172,8 +173,7 @@ namespace DADStorm {
             foreach (string repl_url in operators[id].replicas_url){
 				RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(replicas_by_url[repl_url].Start);
 				RemoteDel.BeginInvoke(null, null);
-			}
-			
+			}		
 		}
 		public void Status(){
             foreach (string op_id in operators.Keys){

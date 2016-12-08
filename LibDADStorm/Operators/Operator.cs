@@ -12,6 +12,7 @@ namespace DADStorm{
 		public List<string> replicas_url;
 		public string mode;
 		public string options;
+        public Boolean last = false;
 
 		public Operator(string id){
 			this.id = id;

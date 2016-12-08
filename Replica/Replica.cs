@@ -76,6 +76,23 @@ namespace DADStorm{
             }).Start();
         }
 
+        public void AddSentTuple(Tuple t) {
+            sent_tuples.Add(t.id,t);
+        }
+        public void RemoveSentTuple(Tuple t) {
+            sent_tuples.Remove(t.id);
+        }
+        private void SentTuple(Tuple t) {
+            AddSentTuple(t);
+            foreach (Replica repl in sisters)
+                repl.AddSentTuple(t);
+        }
+        private void AckTuple(Tuple t) {
+            RemoveSentTuple(t);
+            foreach (Replica repl in sisters)
+                repl.RemoveSentTuple(t);
+        }
+
         public Replica(string op_id, string repl_url, string pm_url){
 			this.url = repl_url;
 
@@ -117,11 +134,14 @@ namespace DADStorm{
 
         private void ProcessTuple(Tuple tuple) {     
             List<Tuple> tuples = op.execute(tuple);
-            tuple.origin.ack(tuple);
-            if (tuples != null)
+
+            if (op.last || tuples == null || tuples.Count==0)
+                tuple.origin.ack(tuple);
+            else if (tuples != null)
                 tuples.ForEach((t) => {
                     if (t != null) {
                         t.origin = this;
+                        t.father = tuple;
                         output_queue.Enqueue(t);
                     }
                 });
@@ -129,12 +149,13 @@ namespace DADStorm{
         public void ack(Tuple t) {
             if (t.filename != null) {
                 Monitor.Enter(input_not_processed);
-                input_not_processed[t.filename][t.line]=null;
+                input_not_processed[t.filename].Remove(t.line);
                 Monitor.Exit(input_not_processed);
             }
             if(t.sent){
                 Monitor.Enter(sent_tuples);
-                sent_tuples.Remove(t.id);
+                if(sent_tuples.ContainsKey(t.id))
+                    sent_tuples.Remove(t.id);
                 Monitor.Exit(sent_tuples);
             }
             Console.WriteLine("ACK: " + t.id);
@@ -237,7 +258,7 @@ namespace DADStorm{
                             byte[] hashed = md5Hasher.ComputeHash(Encoding.UTF8.GetBytes(field_value));
                             int hash = BitConverter.ToInt32(hashed, 0);
 
-                            int index = hash % op.replicas_url.Count - FaultyReplicas();
+                            int index = hash % (op.replicas_url.Count - FaultyReplicas());
                             if (index != id)  
                                 continue;
                             
@@ -349,6 +370,8 @@ namespace DADStorm{
                                                    r => ((Replica)(r.Target)).id == repl_id);
                         send(this, (EventArgs)tuple);
                         success = true;
+                        if (op.last)
+                            tuple.origin.ack(tuple);
                     }
                     catch (Exception) {
                         Console.WriteLine("Failed to send tuple to replica " + repl_id);
@@ -412,6 +435,8 @@ namespace DADStorm{
                     }
                 }
             }
+            try { tuple.father.origin.ack(tuple.father); }
+            catch (Exception) { Console.WriteLine("Cannot sent ack!"); }
             sent_tuples[tuple.id]=tuple;
         }
 		public void Receive(Replica repl, EventArgs e){

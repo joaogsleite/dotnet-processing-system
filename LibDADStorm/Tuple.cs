@@ -13,6 +13,7 @@ namespace DADStorm{
         public string id;
         public IReplica origin;
         public Boolean sent = false;
+        public Tuple father = null;
 
         public string filename;
         public int line;
