@@ -22,7 +22,11 @@ namespace DADStorm
 			return content.Split(new string[]{"LoggingLevel "},StringSplitOptions.None)[1].Split(delimiters)[0];
 		}
 
-		public List<string> commands(){
+        public string semantics() {
+            return content.Split(new string[] { "Semantics " }, StringSplitOptions.None)[1].Split(delimiters)[0];
+        }
+
+        public List<string> commands(){
 			string[] lines = content.Split('\n');
 			List<string> res = new List<string>();
 			foreach (string line in lines){

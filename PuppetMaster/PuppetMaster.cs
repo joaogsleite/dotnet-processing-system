@@ -25,6 +25,7 @@ namespace DADStorm {
 		public TextBox log_box;
 		private Queue<string> commands = new Queue<string>();
         private MainWindow window;
+        private string semantics_value;
 
 		public PuppetMaster() : base() { }
 
@@ -59,7 +60,11 @@ namespace DADStorm {
 			return operators[op_id];
 		}
 
-		public void CreateOperators(List<Operator> ops) {
+        public void Semantics(string value) {
+            this.semantics_value = value;
+        }
+
+        public void CreateOperators(List<Operator> ops) {
 			Operator last = ops.Last();
 			Boolean last_op = false;
 			foreach (Operator op in ops){
@@ -73,6 +78,10 @@ namespace DADStorm {
 				}	
 			}
 		}
+
+        public string semantics() {
+            return semantics_value;
+        }
 
         public void exit(){
             foreach (IReplica repl in replicas_by_url.Values){

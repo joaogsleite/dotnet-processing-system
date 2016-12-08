@@ -43,6 +43,8 @@ namespace DADStorm {
                             conf_loaded = true;
                             pm.LoggingLevel(p.logging_level());
                             log("Logging level: " + p.logging_level());
+                            pm.Semantics(p.semantics());
+                            log("Semantics: " + p.semantics());
                             pm.CreateOperators(p.operators());
                             log("Creating operators...");
                             pm.ConnectToReplicas();

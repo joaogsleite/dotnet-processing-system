@@ -19,6 +19,7 @@ namespace DADStorm{
 		private string url;
 		private Queue<Tuple> input_queue = new Queue<Tuple>();
         private Queue<Tuple> output_queue = new Queue<Tuple>();
+        private Dictionary<string, Tuple> input_tuples = new Dictionary<string, Tuple>();
         private Dictionary<string,Tuple> sent_tuples = new Dictionary<string, Tuple>();
         private Dictionary<string,Dictionary<int,Tuple>> input_not_processed = new Dictionary<string, Dictionary<int, Tuple>>();
         private Boolean processing = false;
@@ -32,8 +33,11 @@ namespace DADStorm{
         private Boolean readfiles = false;
         private Boolean checking_tuples_not_processed = false;
 
+        private string semantics;
+
         public void check_tuples_not_processed() {
-            if (checking_tuples_not_processed) return;
+            if (checking_tuples_not_processed || semantics.Contains("at-most-once"))
+                return;
             checking_tuples_not_processed = true;
 
             new Thread(() => {
@@ -78,6 +82,7 @@ namespace DADStorm{
 
         public void AddSentTuple(Tuple t) {
             sent_tuples.Add(t.id,t);
+
         }
         public void RemoveSentTuple(Tuple t) {
             sent_tuples.Remove(t.id);
@@ -106,6 +111,7 @@ namespace DADStorm{
 			pm = (IPM)Activator.GetObject(typeof(IPM), pm_url);
             
             this.op = pm.get_operator_by_id(op_id);
+            this.semantics = pm.semantics();
             this.id = getMyId();
 
             string start_text = "[" + op_id + " " + id + "] created!";
@@ -147,6 +153,7 @@ namespace DADStorm{
                 });
         }
         public void ack(Tuple t) {
+            if (semantics.Contains("at-most-once")) return;
             if (t.filename != null) {
                 Monitor.Enter(input_not_processed);
                 input_not_processed[t.filename].Remove(t.line);
@@ -238,7 +245,8 @@ namespace DADStorm{
             new Thread(() => {
                 readfiles = true;
                 foreach (string path in op.input_files) {
-                    input_not_processed.Add(path, new Dictionary<int, Tuple>());
+                    if(!semantics.Contains("at-most-once"))
+                        input_not_processed.Add(path, new Dictionary<int, Tuple>());
                     string[] lines = System.IO.File.ReadAllLines(@path);
                     int line_number = 0;
                     foreach (string line in lines) {
@@ -248,7 +256,8 @@ namespace DADStorm{
                         t.line = line_number;
                         t.filename = path;
                         t.origin = this;
-                        input_not_processed[path].Add(line_number, t);
+                        if (!semantics.Contains("at-most-once"))
+                            input_not_processed[path].Add(line_number, t);
                         if (routing().Contains("hashing")) {
                             int field_index = Int32.Parse(routing().Split('(')[1].Split(')')[0]);
                             //Console.WriteLine("Routing: hashing(" + field + ")");
@@ -374,6 +383,7 @@ namespace DADStorm{
                             tuple.origin.ack(tuple);
                     }
                     catch (Exception) {
+                        if (semantics.Contains("at-most-once")) return;
                         Console.WriteLine("Failed to send tuple to replica " + repl_id);
                         Console.WriteLine("Trying to send tuple to replica " + (repl_id++)+"...");
                         success = false;
@@ -404,6 +414,7 @@ namespace DADStorm{
                         success = true;
                     }
                     catch (Exception) {
+                        if (semantics.Contains("at-most-once")) return;
                         if (index == -1) { return; }
                         Console.WriteLine("Failed to send tuple to replica " + index);  
                         handlers.RemoveAt(index);
@@ -428,6 +439,7 @@ namespace DADStorm{
                         send(this, (EventArgs)tuple);
                         success = true;
                     } catch (Exception) {
+                        if (semantics.Contains("at-most-once")) return;
                         Console.WriteLine("Failed to send tuple to replica " + index);
                         if (index == -1) { return; }
                         handlers.RemoveAt(index);
@@ -441,7 +453,8 @@ namespace DADStorm{
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
-                input_queue.Enqueue((Tuple)e);
+                Tuple t = (Tuple)e;
+                input_queue.Enqueue(t);
             }).Start(); 
 		}
 
