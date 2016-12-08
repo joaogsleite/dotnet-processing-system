@@ -65,7 +65,7 @@ namespace DADStorm{
                     Monitor.Enter(sent_tuples);
                     string[] ids = sent_tuples.Keys.ToArray();
                     foreach (string id in ids) {
-                        if (sent_tuples[id] == null) continue;
+                        if (sent_tuples[id] == null || sent_tuples[id].ack) continue;
                         if (DateTime.Compare(sent_tuples[id].date, DateTime.Now.AddSeconds(-30)) < 0) {
                             Console.WriteLine(sent_tuples[id] + " sent not processed! Adding to queue...");
                             Tuple t = sent_tuples[id];
@@ -84,8 +84,8 @@ namespace DADStorm{
             sent_tuples.Add(t.id,t);
 
         }
-        public void RemoveSentTuple(Tuple t) {
-            sent_tuples.Remove(t.id);
+        public void AckSentTuple(Tuple t) {
+            sent_tuples[t.id].ack = true;
         }
         private void SentTuple(Tuple t) {
             AddSentTuple(t);
@@ -93,9 +93,9 @@ namespace DADStorm{
                 repl.AddSentTuple(t);
         }
         private void AckTuple(Tuple t) {
-            RemoveSentTuple(t);
+            AckSentTuple(t);
             foreach (Replica repl in sisters)
-                repl.RemoveSentTuple(t);
+                repl.AckSentTuple(t);
         }
 
         public Replica(string op_id, string repl_url, string pm_url){
@@ -453,8 +453,13 @@ namespace DADStorm{
         }
 		public void Receive(Replica repl, EventArgs e){
             new Thread(() => {
-                Tuple t = (Tuple)e;
-                input_queue.Enqueue(t);
+                Tuple tuple = (Tuple)e;
+                if (!semantics.Contains("at-least-once"))
+                    foreach (Tuple t in sent_tuples.Values)
+                        if (t.father!=null)
+                            if (t.father.id.Equals(tuple.id))
+                                return;
+                input_queue.Enqueue(tuple);
             }).Start(); 
 		}
 

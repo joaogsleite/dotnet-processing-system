@@ -14,6 +14,7 @@ namespace DADStorm{
         public IReplica origin;
         public Boolean sent = false;
         public Tuple father = null;
+        public Boolean ack = false;
 
         public string filename;
         public int line;
